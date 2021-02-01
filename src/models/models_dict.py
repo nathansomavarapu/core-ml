@@ -1,5 +1,5 @@
 import torchvision.models as models
-model_dict = {
+models_dict = {
     'resnet18': models.resnet18,
     'resnet34': models.resnet34,
     'resnet50': models.resnet50,

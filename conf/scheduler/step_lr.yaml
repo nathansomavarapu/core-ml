@@ -1,0 +1,3 @@
+# @package _group_
+name: step_lr
+step_size: 60

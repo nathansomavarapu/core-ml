@@ -1,0 +1,12 @@
+defaults:
+  - optimizer: sgd
+  - scheduler: step_lr
+  - model: resnet18
+  - loss_fn: cross_entropy
+  - transforms: basic_im
+  - dataset: cifar10
+  - dataloader: basic_loader
+epochs: 10
+progress: True
+print_to_term: True
+log_mlflow: True

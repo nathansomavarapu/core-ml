@@ -1,0 +1,11 @@
+# @package _group_
+name: cifar10
+val_split: 0.8
+train:
+  root: './data'
+  download: True
+  train: True
+test:
+  root: './data'
+  download: True
+  train: False
