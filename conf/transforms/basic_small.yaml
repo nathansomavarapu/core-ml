@@ -1,0 +1,5 @@
+# @package _group_
+train:
+  name: basic_small
+test:
+  name: basic_small

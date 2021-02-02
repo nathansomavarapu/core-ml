@@ -9,7 +9,7 @@ class VisualClassificationRunner(BaseRunner):
     def setup_module(self, conf: DictConfig):
         return VisualClassificationModule(conf)
 
-@hydra.main(config_path="../conf", config_name="visual_classification.yaml")
+@hydra.main(config_path="../conf", config_name="cifar10.yaml")
 def main(conf: DictConfig):
     runner = VisualClassificationRunner(conf)
     runner.main()

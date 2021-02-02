@@ -91,7 +91,7 @@ class BaseRunner(ABC):
             self.module.print_val_step()
         
         if not hasattr(self.module, 'val_acc') or self.module.val_log['val_acc'] >= self.module.val_acc:
-            self.test_model = copy.deepcopy(self.module.model)
+            self.module.test_model = copy.deepcopy(self.module.model)
             self.module.val_acc = self.module.val_log['val_acc']
     
     def test(self) -> None:

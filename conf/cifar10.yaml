@@ -1,15 +1,15 @@
 defaults:
-  - optimizer: sgd
-  - scheduler: step
+  - optimizer: sgd_cifar10
+  - scheduler: cosine
   - model: resnet18
   - loss_fn: cross_entropy
-  - transforms: basic_im
+  - transforms: basic_small
   - dataset: cifar10
   - dataloader: basic_loader
   - hydra: no_logging
-device: cpu
+device: cuda:0
 runner:
-  epochs: 10
+  epochs: 200
   progress: True
   print_to_term: True
   log_mlflow: True

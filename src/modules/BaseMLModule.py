@@ -283,11 +283,11 @@ class BaseMLModule(ABC):
     def print_train_step(self) -> None:
         """Prints to terminal after one iteration of training.
         """
-        print_str = 'Epoch {},'.format(self.e)
+        print_str = 'Epoch {}, '.format(self.e)
         for k,v in self.train_log.items():
-            print_str = print_str + '{} : {:.4f}, \t'.format(k, v)
+            print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
-        print(print_str)
+        print(print_str[:-1])
 
     def log_train_step(self) -> None:
         """Logs data to mlflow after one iteration of training.
@@ -304,11 +304,11 @@ class BaseMLModule(ABC):
     def print_val_step(self) -> None:
         """Prints to terminal after one iteration of validation.
         """
-        print_str = 'Epoch {},'.format(self.e)
+        print_str = 'Epoch {}, '.format(self.e)
         for k,v in self.val_log.items():
-            print_str = print_str + '{} : {:.4f}, \t'.format(k, v)
+            print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
-        print(print_str)
+        print(print_str[:-1])
 
     def log_val_step(self) -> None:
         """Logs data to mlflow after one iteration of validation.
@@ -327,11 +327,11 @@ class BaseMLModule(ABC):
     def print_test_step(self) -> None:
         """Prints to terminal after one iteration of testing.
         """
-        print_str = 'Epoch {},'.format(self.e)
+        print_str = 'Epoch {}, '.format(self.e)
         for k,v in self.test_log.items():
-            print_str = print_str + '{} : {:.4f}, \t'.format(k, v)
+            print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
-        print(print_str)
+        print(print_str[:-1])
 
     def log_test_step(self) -> None:
         """Logs data to mlflow after one iteration of testing.
