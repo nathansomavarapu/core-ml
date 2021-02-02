@@ -3,7 +3,6 @@ from typing import Any, Tuple
 from omegaconf import DictConfig
 import mlflow
 
-from utils import Mode
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -34,9 +33,8 @@ class BaseMLModule(ABC):
         :type conf: DictConfig
         """
         self.setup()
-        self.mode = Mode.EMPTY
 
-        self.device = self.setup_device()
+        self.device = self.setup_device(conf)
 
         self.model = self.init_model(conf)
         self.test_model = None
@@ -46,7 +44,7 @@ class BaseMLModule(ABC):
         self.trainset, self.valset, self.testset = self.init_datasets(conf)
         self.trainloader, self.valloader, self.testloader = self.init_dataloaders(conf)
         self.loss_fn = self.init_loss_fn(conf)
-
+                
         self.config = conf
     
     def setup_device(self, conf: DictConfig) -> device:
@@ -86,14 +84,22 @@ class BaseMLModule(ABC):
 
         model_conf = conf.model
         model_name = model_conf.name
-        model_params = model_conf.copy()
+        model_load_path = model_conf.load_path if 'load_path' in model_conf else None
+
+        model_params = dict(model_conf)
         del model_params['name']
+
+        if model_load_path:
+            del model_params['load_path']
 
         if model_name not in self.models_dict:
             raise NotImplementedError
 
         model_class = self.models_dict[model_name]
         model = model_class(**model_params)
+
+        if model_load_path:
+            model.load_state_dict(torch.load(model_load_path, map_location='cpu'))
 
         model.to(self.device)
 
@@ -111,7 +117,8 @@ class BaseMLModule(ABC):
 
         opt_conf = conf.optimizer
         opt_name = opt_conf.name
-        opt_params = opt_conf.copy()
+
+        opt_params = dict(opt_conf)
         del opt_params['name']
 
         if opt_name not in optimizers_dict:
@@ -133,7 +140,8 @@ class BaseMLModule(ABC):
         """
         loss_fn_conf = conf.loss_fn
         loss_fn_name = loss_fn_conf.name
-        loss_fn_params = loss_fn_conf.copy()
+
+        loss_fn_params = dict(loss_fn_conf)
         del loss_fn_params['name']
 
         if loss_fn_name not in self.loss_fn_dict:
@@ -153,12 +161,13 @@ class BaseMLModule(ABC):
         :return: Pytorch learning rate scheduler
         :rtype: optim.lr_scheduler._LRScheduler
         """
-        if "sched" not in conf:
+        if "scheduler" not in conf:
             return None
         
-        sched_conf = conf.sched
+        sched_conf = conf.scheduler
         sched_name = sched_conf.name
-        sched_params = sched_conf.copy()
+
+        sched_params = dict(sched_conf)
         del sched_params['name']
 
         if sched_name not in self.schedulers_dict:
@@ -166,6 +175,8 @@ class BaseMLModule(ABC):
 
         sched_class = self.schedulers_dict[sched_name]
         sched = sched_class(self.optimizer, **sched_params)
+
+        return sched
 
     def init_transforms(self, conf: DictConfig) -> Tuple[Any, Any]:
         """Initialize transform using the config file. The transform choices 
@@ -178,12 +189,12 @@ class BaseMLModule(ABC):
         """
         transform_conf = conf.transforms
         
-        train_params = transform_conf.train
-        transform_train_name = train_params.name
+        transform_train_name = transform_conf.train.name
+        train_params = dict(transform_conf.train)
         del train_params['name']
 
-        test_params = transform_conf.test
-        transform_test_name = test_params.name
+        transform_test_name = transform_conf.test.name
+        test_params = dict(transform_conf.test)
         del test_params['name']
 
         if transform_train_name not in self.transforms_dict:
@@ -215,18 +226,18 @@ class BaseMLModule(ABC):
         if dataset_name not in self.datasets_dict:
             raise NotImplementedError
 
-        train_conf = dataset_conf.train
+        train_conf = dict(dataset_conf.train)
 
         assert not ('val' in dataset_conf and 'val_split' in dataset_conf), "Either val or val_split should be specified not both."
         val_conf = None
         if 'val' in dataset_conf:
-            val_conf = dataset_conf.val
+            val_conf = dict(dataset_conf.val)
         if 'val_split' in dataset_conf:
             val_conf = 'split_train'
 
         assert val_conf is not None, "Val configuration not properly specified."
 
-        test_conf = dataset_conf.test
+        test_conf = dict(dataset_conf.test)
 
         dataset_class = self.datasets_dict[dataset_name]
 

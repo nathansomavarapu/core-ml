@@ -1,2 +1,5 @@
 # @package _group_
-name: basic_im
+train:
+  name: basic_im
+test:
+  name: basic_im

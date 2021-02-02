@@ -23,17 +23,14 @@ class BaseRunner(ABC):
         :param conf: Configuration file
         :type conf: DictConfig
         """
-        self.epochs = conf.epochs
+        runner_conf = conf.runner
+        self.epochs = runner_conf.epochs
 
-        self.progress = conf.progress if 'progress' in conf else False
-        self.print_to_term = conf.print_to_term if 'print_to_term' in conf else False
-        self.log_mlflow = conf.log_mlflow if 'mlflow' in conf else False
-
-        if self.log_mlflow:
-            self.log_parameters(conf)
-            mlflow.log_param('node', os.uname()[1])
+        self.progress = runner_conf.progress if 'progress' in runner_conf else False
+        self.print_to_term = runner_conf.print_to_term if 'print_to_term' in runner_conf else False
+        self.log_mlflow = runner_conf.log_mlflow if 'log_mlflow' in runner_conf else False
         
-        self.module = self.initialize_module()
+        self.module = self.setup_module(conf)
         
         self.config = conf
     
@@ -116,6 +113,9 @@ class BaseRunner(ABC):
         by main.
         """
         self.setup()
+        if self.log_mlflow:
+            self.log_parameters(self.config)
+            mlflow.log_param('node', os.uname()[1])
 
         for e in range(self.epochs):
             self.module.e = e
@@ -128,7 +128,7 @@ class BaseRunner(ABC):
         self.teardown()
     
     @abstractmethod
-    def initialize_module(self, conf: DictConfig) -> BaseMLModule:
+    def setup_module(self, conf: DictConfig) -> BaseMLModule:
         """Initialize module to be used as part of run logic.
         Abstract method to be implemented.
 

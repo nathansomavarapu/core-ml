@@ -112,3 +112,4 @@ outputs/
 tmp/
 transforms/models/
 analysis/accuracy_shape_texture
+./data
