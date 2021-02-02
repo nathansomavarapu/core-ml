@@ -1,6 +1,6 @@
 import torch
 
-def correct(preds, labels, n, loss_fn):
+def correct(preds, labels, n=1):
     
     _, predicted = preds.detach().topk(n, 1)
     

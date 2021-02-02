@@ -13,3 +13,4 @@ runner:
   progress: True
   print_to_term: True
   log_mlflow: True
+  exp_name: cifar10

@@ -2,6 +2,7 @@ import os
 import mlflow
 import torch
 import copy
+import tqdm
 
 from omegaconf import DictConfig
 import hydra.utils as hutils
@@ -43,7 +44,7 @@ class BaseRunner(ABC):
         """
         mlflow.set_tracking_uri('file://' + hutils.get_original_cwd() + '/mlruns')
         if self.log_mlflow:
-            mlflow.set_experiment(self.config.exp_name)
+            mlflow.set_experiment(self.config.runner.exp_name)
     
     def teardown(self) -> None:
         """Teardown function called after runner ends, meant to
@@ -89,10 +90,9 @@ class BaseRunner(ABC):
         if self.print_to_term:
             self.module.print_val_step()
         
-        if not hasattr(self.module, 'val_acc'):
-            self.module.val_acc = self.module.val_log['val_acc']
-        elif self.module.val_log['val_acc'] >= self.module.val_acc:
+        if not hasattr(self.module, 'val_acc') or self.module.val_log['val_acc'] >= self.module.val_acc:
             self.test_model = copy.deepcopy(self.module.model)
+            self.module.val_acc = self.module.val_log['val_acc']
     
     def test(self) -> None:
         """Run the module's validation method and put model in eval mode
@@ -116,8 +116,8 @@ class BaseRunner(ABC):
         if self.log_mlflow:
             self.log_parameters(self.config)
             mlflow.log_param('node', os.uname()[1])
-
-        for e in range(self.epochs):
+        
+        for e in tqdm.tqdm(range(self.epochs), disable=(not self.progress)):
             self.module.e = e
 
             self.train()
