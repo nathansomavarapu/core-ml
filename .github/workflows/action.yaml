@@ -20,18 +20,16 @@ jobs:
                   python -m pip install -r requirements-dev.txt
             - name: Pylint
               run: |
-                  cd src/
                   # run pylint with exit code zero so that github actions doesn't
                   # fail on error. --disable=R,C disables refactor and convention
                   # warnings which are usually silly. Redirect both stdout and
                   # stderr to the file pylint.out
-                  python -m pylint --exit-zero --disable=R,C . >pylint.out 2>&1
+                  python -m pylint --exit-zero --disable=R,C src/ >pylint-output.txt 2>&1
             - name: mypy
               run: |
-                  cd src/
-                  python -m mypy . || true >mypy.out 2>&1
+                  python -m mypy src/ >mypy-output.txt 2>&1 || true
             - name: Archive
               uses: actions/upload-artifact@v2
               with:
                   name: pylint-mypy-output
-                  path: src/*.out
+                  path: *.out
