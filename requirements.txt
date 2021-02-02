@@ -1,0 +1,7 @@
+hydra
+mlflow
+omegaconf
+torch
+torchvision
+tqdm
+omegaconf
