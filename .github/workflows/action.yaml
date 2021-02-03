@@ -1,0 +1,35 @@
+name: Test
+
+on: push
+
+jobs:
+    build:
+
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python
+              uses: actions/setup-python@v2
+              with:
+                  python-version: '3.6'
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install -r requirements.txt
+                  python -m pip install -r requirements-dev.txt
+            - name: Pylint
+              run: |
+                  # run pylint with exit code zero so that github actions doesn't
+                  # fail on error. --disable=R,C disables refactor and convention
+                  # warnings which are usually silly. Redirect both stdout and
+                  # stderr to the file pylint.out
+                  python -m pylint --exit-zero --disable=R,C src/ >pylint-output.txt 2>&1
+            - name: mypy
+              run: |
+                  python -m mypy src/ >mypy-output.txt 2>&1 || true
+            - name: Archive
+              uses: actions/upload-artifact@v2
+              with:
+                  name: pylint-mypy-output
+                  path: ./*-output.txt
