@@ -26,15 +26,17 @@ class BaseMLModule(ABC):
     :type ABC: Class
     """
 
-    def __init__(self, conf: DictConfig) -> None:
+    def __init__(self, conf: DictConfig, device: device) -> None:
         """Initialize a BaseMLModule.
 
         :param conf: Configuration file
         :type conf: DictConfig
+        :param device: Pytorch device
+        :type device: device
         """
         self.setup()
-
-        self.device = self.setup_device(conf)
+        
+        self.device = device
 
         self.model = self.init_model(conf)
         self.test_model = None
@@ -46,18 +48,6 @@ class BaseMLModule(ABC):
         self.loss_fn = self.init_loss_fn(conf)
                 
         self.config = conf
-    
-    def setup_device(self, conf: DictConfig) -> device:
-        """Setup the device of the model.
-
-        :param conf: Configuration file
-        :type conf: DictConfig
-        :return: Pytorch device
-        :rtype: device
-        """
-        device = torch.device(conf.device) if torch.cuda.is_available() else torch.device('cpu')
-
-        return device
 
     def setup(self) -> None:
         """Method to perform any setup needed before
@@ -87,7 +77,6 @@ class BaseMLModule(ABC):
         model_load_path = model_conf.load_path if 'load_path' in model_conf else None
 
         model_params = dict(model_conf)
-        del model_params['name']
 
         if model_load_path:
             del model_params['load_path']
@@ -111,10 +100,10 @@ class BaseMLModule(ABC):
 
         :param conf: Configuration file
         :type conf: DictConfig
+        :raises NotImplementedError: Raised when optimizer name not supported
         :return: Pytorch Optimizer
         :rtype: optim.Optimizer
         """
-
         opt_conf = conf.optimizer
         opt_name = opt_conf.name
 
@@ -229,26 +218,25 @@ class BaseMLModule(ABC):
         train_conf = dict(dataset_conf.train)
 
         assert not ('val' in dataset_conf and 'val_split' in dataset_conf), "Either val or val_split should be specified not both."
+        val = dataset_conf.val if 'val' in dataset_conf else None
         val_conf = None
-        if 'val' in dataset_conf:
+        if val:
             val_conf = dict(dataset_conf.val)
-        if 'val_split' in dataset_conf:
-            val_conf = 'split_train'
-
-        assert val_conf is not None, "Val configuration not properly specified."
-
+        
         test_conf = dict(dataset_conf.test)
 
         dataset_class = self.datasets_dict[dataset_name]
 
         trainset = dataset_class(**train_conf, transform=self.train_transform)
-        if val_conf == 'split_train':
-            n = len(trainset)
-            val_len = int(dataset_conf.val_split * n)
-            train_len = n - val_len
-            trainset, valset = random_split(trainset, [train_len, val_len])
-        else:
-            valset = dataset_class(**val_conf, transform=self.test_transform)
+        valset = None
+        if val:
+            if val == 'split_train':
+                n = len(trainset)
+                val_len = int(dataset_conf.val_split * n)
+                train_len = n - val_len
+                trainset, valset = random_split(trainset, [train_len, val_len])
+            else:
+                valset = dataset_class(**val_conf, transform=self.test_transform)
         
         testset = dataset_class(**test_conf, transform=self.test_transform)
 
@@ -268,39 +256,17 @@ class BaseMLModule(ABC):
         test_dataloader_conf = dataloader_conf.test
 
         trainloader = DataLoader(self.trainset, **train_dataloader_conf)
-        valloader = DataLoader(self.valset, **val_dataloader_conf)
+        valloader = DataLoader(self.valset, **val_dataloader_conf) if self.valset is not None else None
         testloader = DataLoader(self.testset, **test_dataloader_conf)
 
         return trainloader, valloader, testloader
-
-    @abstractmethod
-    def train(self) -> None:
-        """This method runs one iteration of training, i.e. one full epoch. Subclasses will need 
-        to override more functionality.
+    
+    def scheduler_step(self) -> None:
+        """Run one step of the scheduler, meant to be called once per epoch.
         """
-        pass
-
-    def print_train_step(self) -> None:
-        """Prints to terminal after one iteration of training.
-        """
-        print_str = 'Epoch {}, '.format(self.e)
-        for k,v in self.train_log.items():
-            print_str = print_str + '{} : {:.4f}, '.format(k, v)
-            
-        print(print_str[:-1])
-
-    def log_train_step(self) -> None:
-        """Logs data to mlflow after one iteration of training.
-        """
-        mlflow.log_metrics(self.train_log)
-
-    @abstractmethod
-    def val(self) -> None:
-        """This method runs one iteration of validation, i.e. one full epoch. Subclasses will need 
-        to override more functionality.
-        """
-        pass
-
+        if self.scheduler:
+            self.scheduler.step()
+    
     def print_val_step(self) -> None:
         """Prints to terminal after one iteration of validation.
         """
@@ -309,21 +275,7 @@ class BaseMLModule(ABC):
             print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
         print(print_str[:-1])
-
-    def log_val_step(self) -> None:
-        """Logs data to mlflow after one iteration of validation.
-        """
-        mlflow.log_metrics(self.val_log)
-
-    @abstractmethod
-    def test(self) -> None:
-        """This method runs one iteration of testing, i.e. one full epoch. The class attribute 
-        test_model must be set before testing during the val or train phase. Subclasses 
-        will need to override more functionality.
-        """
-        assert self.test_model is not None, "No test model avaliable, set self.test_model before testing."
-        pass
-
+    
     def print_test_step(self) -> None:
         """Prints to terminal after one iteration of testing.
         """
@@ -332,8 +284,39 @@ class BaseMLModule(ABC):
             print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
         print(print_str[:-1])
+    
+    @abstractmethod
+    def forward_train(self, data: Tuple) -> Any:
+        """This method runs one iteration of training. Subclasses will need 
+        to override functionality
 
-    def log_test_step(self) -> None:
-        """Logs data to mlflow after one iteration of testing.
+        :param data: Data tuple of inputs to module
+        :type data: Tuple
+        :return: Tensor and logs used for optimization
+        :rtype: Any
         """
-        mlflow.log_metrics(self.test_log)
+        pass
+
+    @abstractmethod
+    def forward_val(self, data: Tuple) -> Any:
+        """This method runs one iteration of validation. Subclasses will need 
+        to override functionality
+
+        :param data: Data tuple of inputs to module
+        :type data: Tuple
+        :return: Tensor and logs used for optimization
+        :rtype: Any
+        """
+        pass
+
+    @abstractmethod
+    def forward_test(self, data: Tuple) -> Any:
+        """This method runs one iteration of testing. Subclasses will need 
+        to override functionality
+
+        :param data: Data tuple of inputs to module
+        :type data: Tuple
+        :return: Tensor and logs used for optimization
+        :rtype: Any
+        """
+        pass

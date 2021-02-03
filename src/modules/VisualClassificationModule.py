@@ -1,86 +1,74 @@
-from modules.BaseMLModule import BaseMLModule
-
+import torch
 from utils.metrics import correct
+from modules.BaseMLModule import BaseMLModule
+from typing import Tuple, Union
 
 class VisualClassificationModule(BaseMLModule):
     
-    def train(self) -> None:
-        """Runs one training epoch, saving metrics to the training log.
+    def forward_train(self, data: Tuple) -> Tuple[torch.Tensor, dict]:
+        """Runs one iteration of classification training.
+
+        :param data: Tuple of data to be used for training
+        :type data: Tuple
+        :return: Loss tensor to be used for optimization, dict to be used
+        for logging
+        :rtype: Tuple[torch.Tensor, dict]
         """
-        train_loss = 0.0
-        train_batches = len(self.trainloader)
-        train_correct = 0.0
-        train_total = 0.0
+        images, labels = data
+        pred = self.model(images)
+        loss = self.loss_fn(pred, labels)
+        correct_pred = correct(pred, labels)
 
-        for i,data in enumerate(self.trainloader):
-            images, labels = data
-            images = images.to(self.device)
-            labels = labels.to(self.device)
-
-            pred = self.model(images)
-            loss = self.loss_fn(pred, labels)
-
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-            train_loss += loss.item()
-            train_correct += correct(pred, labels)
-            train_total += images.size(0)
-        
-        self.train_log = {
-            'train_acc': train_correct / train_total,
-            'train_loss': train_loss / train_batches
+        logging_dict = {
+            'loss': float(loss.item()),
+            'correct': float(correct_pred),
+            'total': float(images.size(0))
         }
 
-    def val(self) -> None:
-        """Runs one validation epoch, saving metrics to the training log.
+        return loss, logging_dict
+
+    def forward_val(self, data: Tuple) -> dict:
+        """Runs one iteration of classification validation.
+
+        :param data: Tuple of data to be used for validation
+        :type data: Tuple
+        :return: Dict to be used for logging
+        :rtype: dict
         """
-        val_loss = 0.0
-        val_batches = len(self.valloader)
-        val_correct = 0.0
-        val_total = 0.0
+        images, labels = data
+        pred = self.model(images)
+        loss = self.loss_fn(pred, labels)
+        correct_pred = correct(pred, labels)
 
-        for i,data in enumerate(self.valloader):
-            images, labels = data
-            images = images.to(self.device)
-            labels = labels.to(self.device)
-
-            pred = self.model(images)
-            loss = self.loss_fn(pred, labels)
-
-            val_loss += loss.item()
-            val_correct += correct(pred, labels)
-            val_total += images.size(0)
-        
-        self.val_log = {
-            'val_acc': val_correct / val_total,
-            'val_loss': val_loss / val_batches
+        logging_dict = {
+            'loss': float(loss.item()),
+            'correct': float(correct_pred),
+            'total': float(images.size(0))
         }
+
+        return logging_dict
     
-    def test(self) -> None:
-        """Runs one test epoch, saving the metrics to the training log.
+    def forward_test(self, data: Tuple) -> dict:
+        """Runs one iteration of classification testing.
+        This function requires that the test model of the
+        module be defined.
+
+        :param data: Tuple of data to be used for testing
+        :type data: Tuple
+        :return: Dict to be used for logging
+        :rtype: dict
         """
-        super(VisualClassificationModule, self).test()
-
-        test_loss = 0.0
-        test_batches = len(self.testloader)
-        test_correct = 0.0
-        test_total = 0.0
-
-        for i,data in enumerate(self.testloader):
-            images, labels = data
-            images = images.to(self.device)
-            labels = labels.to(self.device)
-
-            pred = self.model(images)
-            loss = self.loss_fn(pred, labels)
-
-            test_loss += loss.item()
-            test_correct += correct(pred, labels)
-            test_total += images.size(0)
+        assert self.test_model is not None, "No test model avaliable, set self.test_model before testing."
         
-        self.test_log = {
-            'test_acc': test_correct / test_total,
-            'test_loss': test_loss / test_batches
+        images, labels = data
+        pred = self.test_model(images)
+        loss = self.loss_fn(pred, labels)
+        correct_pred = correct(pred, labels)
+
+        logging_dict = {
+            'loss': float(loss.item()),
+            'correct': float(correct_pred),
+            'total': float(images.size(0))
         }
+
+        return logging_dict

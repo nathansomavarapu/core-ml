@@ -3,14 +3,18 @@ defaults:
   - scheduler: cosine
   - model: resnet18
   - loss_fn: cross_entropy
-  - transforms: basic_small
+  - transforms: cifar
   - dataset: cifar10
   - dataloader: basic_loader
   - hydra: no_logging
-device: cuda:0
 runner:
+  seed: 0
+  device: cuda:0
   epochs: 200
   progress: True
   print_to_term: True
   log_mlflow: True
   exp_name: cifar10
+  test_every_epoch: True
+  val: ${dataset.val}
+  # dry_run: False

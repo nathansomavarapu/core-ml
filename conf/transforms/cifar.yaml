@@ -1,0 +1,5 @@
+# @package _group_
+train:
+  name: cifar
+test:
+  name: basic_small
