@@ -1,4 +1,4 @@
-hydra
+hydra-core
 mlflow
 omegaconf
 torch
