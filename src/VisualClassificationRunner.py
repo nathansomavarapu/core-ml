@@ -2,6 +2,7 @@ from omegaconf import DictConfig
 import hydra
 import tqdm
 import torch
+import copy
 
 from BaseRunner import BaseRunner
 from modules.VisualClassificationModule import VisualClassificationModule
@@ -18,7 +19,7 @@ class VisualClassificationRunner(BaseRunner):
         super(VisualClassificationRunner, self).__init__(conf)
 
         self.val_acc = float('-inf')
-        self.val = bool(self.config.runner.val)
+        self.do_val = bool(self.config.runner.val)
 
         self.test_every_epoch = self.config.runner.test_every_epoch if 'test_every_epoch' in self.config.runner else False
         self.dry_run = self.config.runner.dry_run if 'dry_run' in self.config.runner else False
@@ -65,7 +66,7 @@ class VisualClassificationRunner(BaseRunner):
         for data in train_pbar_iter:
             data = self.move_data_to_device(data)
             loss, log_dict = self.module.forward_train(data)
-
+            
             self.module.optimizer.zero_grad()
             loss.backward()
             self.module.optimizer.step()
@@ -85,8 +86,6 @@ class VisualClassificationRunner(BaseRunner):
 
         if self.log_mlflow:
             self.log_train_step(train_log, step=self.e)
-        # if self.print_to_term:
-        #     print(self.generate_train_string(train_log, step=self.e))
         
         return train_log
     
@@ -117,8 +116,6 @@ class VisualClassificationRunner(BaseRunner):
 
         if self.log_mlflow:
             self.log_val_step(val_log, step=self.e)
-        # if self.print_to_term:
-        #     print(self.generate_val_string(val_log, step=self.e))
         
         if val_log['val_acc'] >= self.val_acc:
             self.module.test_model = copy.deepcopy(self.module.model)
@@ -154,8 +151,6 @@ class VisualClassificationRunner(BaseRunner):
         
         if self.log_mlflow:
             self.log_test_step(test_log, step=self.e)
-        # if self.print_to_term:
-        #     print(self.generate_test_string(test_log, step=self.e))
 
         return test_log
     
@@ -171,7 +166,7 @@ class VisualClassificationRunner(BaseRunner):
 
             epoch_stats = self.generate_train_string(train_log, step=e)
 
-            if self.val:
+            if self.do_val:
                 val_log = self.val()
                 epoch_stats += ', ' + self.generate_val_string(val_log)
             else:

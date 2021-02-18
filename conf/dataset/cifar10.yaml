@@ -1,11 +1,14 @@
 # @package _group_
-name: cifar10
-val: null
+# val: null
+val:
+  split: 0.1
 train:
+  name: cifar10
   root: './data'
   download: True
   train: True
 test:
+  name: cifar10 
   root: './data'
   download: True
   train: False

@@ -210,35 +210,49 @@ class BaseMLModule(ABC):
         :rtype: tuple[Dataset, Dataset, Dataset]
         """
         dataset_conf = conf.dataset
-        dataset_name = dataset_conf.name
+        trainset_name = dataset_conf.train.name
 
-        if dataset_name not in self.datasets_dict:
+        if trainset_name not in self.datasets_dict:
             raise NotImplementedError
 
+        trainset_class = self.datasets_dict[trainset_name]
         train_conf = dict(dataset_conf.train)
+        del train_conf['name']
 
-        assert not ('val' in dataset_conf and 'val_split' in dataset_conf), "Either val or val_split should be specified not both."
-        val = dataset_conf.val if 'val' in dataset_conf else None
-        val_conf = None
-        if val:
-            val_conf = dict(dataset_conf.val)
-        
-        test_conf = dict(dataset_conf.test)
+        trainset = trainset_class(**train_conf, transform=self.train_transform)
 
-        dataset_class = self.datasets_dict[dataset_name]
-
-        trainset = dataset_class(**train_conf, transform=self.train_transform)
+        val = dataset_conf.val
         valset = None
         if val:
-            if val == 'split_train':
+            val_split = dataset_conf.val.split if 'split' in dataset_conf.val else None
+            
+            if val_split:
                 n = len(trainset)
-                val_len = int(dataset_conf.val_split * n)
+                val_len = int(val_split * n)
                 train_len = n - val_len
                 trainset, valset = random_split(trainset, [train_len, val_len])
             else:
-                valset = dataset_class(**val_conf, transform=self.test_transform)
+                valset_name = dataset_conf.val.name
+
+                if valset_name not in self.datasets_dict:
+                    raise NotImplementedError
+                
+                valset_class = self.datasets_dict[valset_name]
+                val_conf = dict(dataset_conf.val)
+                del val_conf['name']
+
+                valset = valset_class(**val_conf, transform=self.test_transform)
         
-        testset = dataset_class(**test_conf, transform=self.test_transform)
+        testset_name = dataset_conf.test.name
+
+        if testset_name not in self.datasets_dict:
+            raise NotImplementedError
+
+        testset_class = self.datasets_dict[testset_name]
+        test_conf = dict(dataset_conf.test)
+        del test_conf['name']
+
+        testset = testset_class(**test_conf, transform=self.test_transform)
 
         return trainset, valset, testset
     
