@@ -1,6 +1,7 @@
 import copy
 import os
 from abc import ABC
+from typing import Union, Callable
 import torch
 from torch.utils.data import ConcatDataset
 from FileListDataset import FileListDataset
@@ -28,9 +29,9 @@ class DGDataset(ABC):
         self.loader = loader
         self.transform = transform
 
-        assert dataset_name in dg_root_dict.keys() and dataset_name in dg_path_dict.keys()
+        assert dataset_name in dg_path_dict.keys()
 
-        self.dataset_root = dg_root_dict[dataset_name]
+        self.dataset_root = dg_root_dict[dataset_name] if dataset_name in dg_root_dict else None
         trainsets = list(dg_path_dict[dataset_name].keys())
         self.trainsets = copy.copy(trainsets)
         self.trainsets.remove(target)
@@ -63,13 +64,14 @@ class DGDataset(ABC):
         return dataset
     
     @abstractmethod
-    def generate_dataset(self, dataset_root: str, data_fp: str) -> torch.util.Dataset:
+    def generate_dataset(self, dataset_root: Union[str, None], data_fp: str) -> torch.util.Dataset:
         """Generate the appropriate dataset for the DG setting that is selected
         will be either a FileListDataset or an ImageFolderDataset. Abstact method to be
         implemented by subclass.
 
-        :param dataset_root: Root path of data
-        :type dataset_root: str
+        :param dataset_root: Root path of data, None for the datasets where there
+        is no file list in which case the file root is the data_fp
+        :type dataset_root: Union[str, None]
         :param data_fp: Path to either a text file containing paths to images or
         a path to the data itself arranged in the structure assumed by the PyTorch
         ImageFolder Dataset
@@ -111,7 +113,7 @@ class VLCSDataset(DGDataset):
         super(DGDataset, self).__init__('vlcs', **kwargs)
     
     def generate_dataset(self, dataset_root: str, data_fp: str) -> torch.util.Dataset:
-        return ImageFolder(os.path.join(dataset_root, data_fp), transform=self.transform, loader=self.loader)
+        return ImageFolder(data_fp, transform=self.transform, loader=self.loader)
 
 class OHDataset(DGDataset):
 
@@ -127,4 +129,4 @@ class DomainNetDataset(DGDataset):
         super(DGDataset, self).__init__('domainnet', **kwargs)
     
     def generate_dataset(self, dataset_root: str, data_fp: str) -> torch.util.Dataset:
-        return ImageFolder(os.path.join(dataset_root, data_fp), transform=self.transform, loader=self.loader)
+        return FileListDataset(dataset_root, data_fp, transform=self.transform, loader=self.loader)
