@@ -1,0 +1,6 @@
+# @package _group_
+name: style_loader
+dataset_name: ${dataset.dataset_name}
+target_dataset: ${dataset.target_dataset}
+inter_source: False
+intra_source: False

@@ -1,0 +1,9 @@
+# @package _group_
+name: ??
+target: ??
+train:
+  mode: 'train'
+val:
+  mode: 'val'
+test:
+  mode: 'test'

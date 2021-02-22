@@ -1,0 +1,20 @@
+defaults:
+  - dataset: dg
+  - optimizer: sgd_${defaults.0.dataset.name}
+  - scheduler: step
+  - model: resnet18_${defaults.0.dataset.name}
+  - loss_fn: cross_entropy
+  - transforms: basic_aug
+  - loader: style_loader
+  - dataloader: dg_loader
+  - hydra: no_logging
+runner:
+  device: cuda:0
+  epochs: 80
+  progress: True
+  print_to_term: True
+  log_mlflow: True
+  exp_name: ${dataset.name}
+  test_every_epoch: True
+  val: ${dataset.val}
+  # dry_run: False

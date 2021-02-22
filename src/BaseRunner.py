@@ -36,7 +36,15 @@ class BaseRunner(ABC):
         self.progress, self.print_to_term, self.log_mlflow = self.init_output_options(conf)
 
         self.module = self.setup_module(conf)
-        
+
+        self.val_acc = float('-inf')
+        self.do_val = bool(self.config.runner.val)
+
+        self.test_every_epoch = self.config.runner.test_every_epoch if 'test_every_epoch' in self.config.runner else False
+        self.dry_run = self.config.runner.dry_run if 'dry_run' in self.config.runner else False
+        if self.dry_run:
+            self.epochs = 1
+
         self.config = conf
     
     def setup_device(self, conf: DictConfig) -> device:
@@ -215,6 +223,25 @@ class BaseRunner(ABC):
         :type step: Union[int,None], optional
         """
         mlflow.log_metrics(test_log, step=self.e)
+    
+    def update_dict(self, total_dict: dict, iter_dict: dict) -> dict:
+        """Updates a dictionary with metrics from a single iteration.
+
+        :param total_dict: Dictionary which updated to incorporate the iteration
+        metric
+        :type total_dict: dict
+        :param iter_dict: Metrics from one iteration of training, validation or testing
+        :type iter_dict: dict
+        :return: Updated dictionary
+        :rtype: dict
+        """
+        for k in iter_dict:
+            if k not in total_dict:
+                total_dict[k] = iter_dict[k]
+            else:
+                total_dict[k] += iter_dict[k]
+        
+        return total_dict
     
     @abstractmethod
     def setup_module(self, conf: DictConfig) -> BaseMLModule:

@@ -3,7 +3,6 @@ from PIL import Image
 from random import random
 from datasets.dg_datasets_dict import dg_path_dict
 from dg_loaders_dict import stylized_dataset_fp_dict
-
 from abc import ABC
 
 class StyleLoader(ABC):

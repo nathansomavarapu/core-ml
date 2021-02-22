@@ -9,13 +9,6 @@ import torch.optim as optim
 from torch import device
 from torch.utils.data import Dataset, random_split, DataLoader
 
-from models.models_dict import models_dict
-from optimizers.optimizers_dict import optimizers_dict
-from optimizers.schedulers_dict import schedulers_dict
-from datasets.datasets_dict import datasets_dict
-from loss_fn.loss_fn_dict import loss_fn_dict
-from transforms.transforms_dict import transforms_dict
-
 
 class BaseMLModule(ABC):
     """Base module which contains the basic attributes of a ml system
@@ -34,7 +27,9 @@ class BaseMLModule(ABC):
         :param device: Pytorch device
         :type device: device
         """
-        self.setup()
+        attrs = self.setup()
+        for k,v in attrs.items():
+            setattr(self, k, v)
         
         self.device = device
 
@@ -48,18 +43,7 @@ class BaseMLModule(ABC):
         self.loss_fn = self.init_loss_fn(conf)
                 
         self.config = conf
-
-    def setup(self) -> None:
-        """Method to perform any setup needed before
-        instantiating other class objects.
-        """
-        self.models_dict = models_dict
-        self.optimizers_dict = optimizers_dict
-        self.schedulers_dict = schedulers_dict
-        self.datasets_dict = datasets_dict
-        self.loss_fn_dict = loss_fn_dict
-        self.transforms_dict = transforms_dict
-
+    
     def init_model(self, conf: DictConfig) -> nn.Module:
         """Initialize model using the config file. The model choices 
         are available in the models directory in models_dict.py. This
@@ -199,6 +183,75 @@ class BaseMLModule(ABC):
 
         return train_transforms, test_transforms
     
+    def init_generic_dataset(self, conf: DictConfig, mode: str) -> Tuple[Dataset, Dict]:
+        """Generic function that sets up a dataset. The code to setup
+        a basic dataset is the same across train val and test. 
+
+        :param conf: Configuration file
+        :type conf: DictConfig
+        :param mode: Dataset mode, train, val or test
+        :type mode: str
+        :return: Tuple of un-instantiated dataset class and a dictionary
+        containing arguments for the dataset
+        :rtype: Tuple[Dataset, Dict]
+        """
+        mode_conf = conf[mode]
+        name = mode_conf.name if 'name' in mode_conf else conf['name']
+
+        if name not in self.datasets_dict:
+            raise NotImplementedError
+        
+        dataset_class = self.dataset_dict[name]
+        dataset_conf = dict(mode_conf)
+        dataset_conf.pop('name', None)
+
+        return dataset_class, dataset_conf
+    
+    def init_trainset(self, conf: DictConfig) -> Dataset:
+        """Initialize train dataset based on the configuration file. In the
+        base module this function is called by the function init_datasets so
+        as to enable spliting the training dataset into training and validation
+        datasets on the fly.
+
+        :param conf: Configuration file
+        :type conf: DictConfig
+        :return: Pytorch Dataset, train
+        :rtype: Dataset
+        """
+        trainset_class, train_conf = self.init_generic_dataset(conf.dataset, 'train')
+        trainset = trainset_class(**train_conf, transform=self.train_transform)
+        return trainset
+    
+    def init_valset(self, conf: DictConfig) -> Dataset:
+        """Initialize val dataset based on the configuration file. In the
+        base module this function is called by the function init_datasets so
+        as to enable spliting the training dataset into training and validation
+        datasets on the fly.
+
+        :param conf: Configuration file
+        :type conf: DictConfig
+        :return: Pytorch Dataset, val
+        :rtype: Dataset
+        """
+        valset_class, val_conf = self.init_generic_dataset(conf.dataset, 'val')
+        valset = valset_class(**val_conf, transform=self.test_transform)
+        return valset
+    
+    def init_testset(self, conf: DictConfig) -> Dataset:
+        """Initialize test dataset based on the configuration file. In the
+        base module this function is called by the function init_datasets so
+        as to enable spliting the training dataset into training and validation
+        datasets on the fly. The test code is extracted for symmetry and extensibility.
+
+        :param conf: Configuration file
+        :type conf: DictConfig
+        :return: Pytorch Dataset, test
+        :rtype: Dataset
+        """
+        testset_class, test_conf = self.init_generic_dataset(conf.dataset, 'test')
+        testset = testset_class(**test_conf, transform=self.test_transform)
+        return testset
+    
     def init_datasets(self, conf: DictConfig) -> Tuple[Dataset, Dataset, Dataset]:
         """Initialize train, val and test datasets, the type of the dataset 
         will be checked based on the type of module that is being run. For example 
@@ -209,18 +262,9 @@ class BaseMLModule(ABC):
         :return: Pytorch Datasets, train, val and test
         :rtype: tuple[Dataset, Dataset, Dataset]
         """
+        trainset = self.init_trainset(conf)
+
         dataset_conf = conf.dataset
-        trainset_name = dataset_conf.train.name
-
-        if trainset_name not in self.datasets_dict:
-            raise NotImplementedError
-
-        trainset_class = self.datasets_dict[trainset_name]
-        train_conf = dict(dataset_conf.train)
-        del train_conf['name']
-
-        trainset = trainset_class(**train_conf, transform=self.train_transform)
-
         val = dataset_conf.val
         valset = None
         if val:
@@ -232,27 +276,9 @@ class BaseMLModule(ABC):
                 train_len = n - val_len
                 trainset, valset = random_split(trainset, [train_len, val_len])
             else:
-                valset_name = dataset_conf.val.name
-
-                if valset_name not in self.datasets_dict:
-                    raise NotImplementedError
-                
-                valset_class = self.datasets_dict[valset_name]
-                val_conf = dict(dataset_conf.val)
-                del val_conf['name']
-
-                valset = valset_class(**val_conf, transform=self.test_transform)
+                valset = self.init_valset(conf)
         
-        testset_name = dataset_conf.test.name
-
-        if testset_name not in self.datasets_dict:
-            raise NotImplementedError
-
-        testset_class = self.datasets_dict[testset_name]
-        test_conf = dict(dataset_conf.test)
-        del test_conf['name']
-
-        testset = testset_class(**test_conf, transform=self.test_transform)
+        testset = self.init_testset(conf)
 
         return trainset, valset, testset
     
@@ -298,6 +324,18 @@ class BaseMLModule(ABC):
             print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
         print(print_str[:-1])
+    
+    @abstractmethod
+    def setup(self) -> dict:
+        """Method to perform any setup needed before instantiating other 
+        class objects. Any variables returned will be assigned to the class. 
+        All of the dictionaries used for component initialization should be 
+        set this way. This method must be overridden by  subclasses.
+
+        :return: dictionary containing class variables to be set to the
+        name specified by the key
+        :rtype: dict
+        """
     
     @abstractmethod
     def forward_train(self, data: Tuple) -> Any:

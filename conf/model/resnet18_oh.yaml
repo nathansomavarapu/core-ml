@@ -1,0 +1,4 @@
+# @package _group_
+name: resnet18
+pretrained: True
+num_classes: 65

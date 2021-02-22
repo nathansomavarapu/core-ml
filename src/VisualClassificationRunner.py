@@ -7,24 +7,7 @@ import copy
 from BaseRunner import BaseRunner
 from modules.VisualClassificationModule import VisualClassificationModule
 
-class VisualClassificationRunner(BaseRunner):
-
-    def __init__(self, conf: DictConfig) -> None:
-        """Initialize VisualClassificationRunner and setup
-        val parameters.
-
-        :param conf: Configuration file
-        :type conf: DictConfig
-        """
-        super(VisualClassificationRunner, self).__init__(conf)
-
-        self.val_acc = float('-inf')
-        self.do_val = bool(self.config.runner.val)
-
-        self.test_every_epoch = self.config.runner.test_every_epoch if 'test_every_epoch' in self.config.runner else False
-        self.dry_run = self.config.runner.dry_run if 'dry_run' in self.config.runner else False
-        if self.dry_run:
-            self.epochs = 1
+class VisualClassificationRunner(BaseRunner):        
 
     def setup_module(self, conf: DictConfig) -> VisualClassificationModule:
         """Initializes the visual classification module.
@@ -35,25 +18,6 @@ class VisualClassificationRunner(BaseRunner):
         :rtype: VisualClassificationModule
         """
         return VisualClassificationModule(conf, self.device)
-
-    def update_dict(self, total_dict: dict, iter_dict: dict) -> dict:
-        """Updates a dictionary with metrics from a single iteration.
-
-        :param total_dict: Dictionary which updated to incorporate the iteration
-        metric
-        :type total_dict: dict
-        :param iter_dict: Metrics from one iteration of training, validation or testing
-        :type iter_dict: dict
-        :return: Updated dictionary
-        :rtype: dict
-        """
-        for k in iter_dict:
-            if k not in total_dict:
-                total_dict[k] = iter_dict[k]
-            else:
-                total_dict[k] += iter_dict[k]
-        
-        return total_dict
     
     def train(self) -> None:
         self.module.model.train()
