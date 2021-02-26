@@ -19,10 +19,10 @@ class VisualClassificationRunner(BaseRunner):
         """
         return VisualClassificationModule(conf, self.device)
     
-    def train(self) -> None:
+    def train(self) -> dict:
         self.module.model.train()
 
-        total_log_dict = {}
+        total_log_dict: dict = {}
         train_batches = len(self.module.trainloader)
 
         train_pbar_iter = tqdm.tqdm(self.module.trainloader, disable=(not self.progress))
@@ -37,6 +37,10 @@ class VisualClassificationRunner(BaseRunner):
 
             total_log_dict = self.update_dict(total_log_dict, log_dict)
 
+            log_dict['acc'] = (log_dict['correct'] / log_dict['total']) * 100.0
+            log_dict.pop('correct')
+            log_dict.pop('total')
+
             if self.print_to_term:
                 train_pbar_iter.set_description('Training: ' + self.generate_train_string(log_dict))
 
@@ -44,7 +48,7 @@ class VisualClassificationRunner(BaseRunner):
                 break
         
         train_log = {
-            'train_acc': total_log_dict['correct'] / total_log_dict['total'],
+            'train_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
             'train_loss': total_log_dict['loss'] / train_batches
         }
 
@@ -53,10 +57,10 @@ class VisualClassificationRunner(BaseRunner):
         
         return train_log
     
-    def val(self) -> None:
+    def val(self) -> dict:
         self.module.model.eval()
 
-        total_log_dict = {}
+        total_log_dict: dict = {}
         val_batches = len(self.module.valloader)
 
         with torch.no_grad():
@@ -67,6 +71,10 @@ class VisualClassificationRunner(BaseRunner):
 
                 total_log_dict = self.update_dict(total_log_dict, log_dict)
 
+                log_dict['acc'] = (log_dict['correct'] / log_dict['total']) * 100.0
+                log_dict.pop('correct')
+                log_dict.pop('total')
+
                 if self.print_to_term:
                     val_pbar_iter.set_description('Validation: ' + self.generate_test_string(log_dict))
 
@@ -74,7 +82,7 @@ class VisualClassificationRunner(BaseRunner):
                     break
         
         val_log = {
-            'val_acc': total_log_dict['correct'] / total_log_dict['total'],
+            'val_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
             'val_loss': total_log_dict['loss'] / val_batches
         }
 
@@ -87,10 +95,10 @@ class VisualClassificationRunner(BaseRunner):
         
         return val_log
         
-    def test(self) -> None:
+    def test(self) -> dict:
         self.module.test_model.eval()
 
-        total_log_dict = {}
+        total_log_dict: dict = {}
         log_dict = {}
         test_batches = len(self.module.testloader)
 
@@ -102,6 +110,10 @@ class VisualClassificationRunner(BaseRunner):
 
                 total_log_dict = self.update_dict(total_log_dict, log_dict)
 
+                log_dict['acc'] = (log_dict['correct'] / log_dict['total']) * 100.0
+                log_dict.pop('correct')
+                log_dict.pop('total')
+
                 if self.print_to_term:
                     test_pbar_iter.set_description('Testing: ' + self.generate_test_string(log_dict))
 
@@ -109,7 +121,7 @@ class VisualClassificationRunner(BaseRunner):
                     break
 
         test_log = {
-            'test_acc': total_log_dict['correct'] / total_log_dict['total'],
+            'test_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
             'test_loss': total_log_dict['loss'] / test_batches
         }
         
@@ -132,7 +144,7 @@ class VisualClassificationRunner(BaseRunner):
 
             if self.do_val:
                 val_log = self.val()
-                epoch_stats += ', ' + self.generate_val_string(val_log)
+                epoch_stats += ' ' + self.generate_val_string(val_log)
             else:
                 self.module.test_model = self.module.model
             
@@ -140,7 +152,7 @@ class VisualClassificationRunner(BaseRunner):
 
             if self.test_every_epoch:
                 test_log = self.test()
-                epoch_stats += ', ' + self.generate_test_string(test_log)
+                epoch_stats += ' ' + self.generate_test_string(test_log)
             
             if self.print_to_term:
                 epoch_pbar_iter.set_description(epoch_stats)

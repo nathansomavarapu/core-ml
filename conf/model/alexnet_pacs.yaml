@@ -1,0 +1,4 @@
+# @package _group_
+name: alexnet_caffe
+pretrained: True
+num_classes: 7

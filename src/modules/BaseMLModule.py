@@ -1,35 +1,47 @@
 from abc import ABC, abstractmethod
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 from omegaconf import DictConfig
 import mlflow
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch import device
 from torch.utils.data import Dataset, random_split, DataLoader
-
 
 class BaseMLModule(ABC):
     """Base module which contains the basic attributes of a ml system
     it contains a model, optimizer, scheduler and dataset attributes.
     Abstract Class to define an interface for ml modules.
 
+    The module uses a number of dictionaries for bookeeping to instantiate
+    components of the module. The required dictionaries are:
+
+    * models_dict
+    * optimizers_dict
+    * schedulers_dict
+    * datasets_dict
+    * loss_fn_dict
+    * transforms_dict
+
     :param ABC: Abstract Basic Class
     :type ABC: Class
     """
 
-    def __init__(self, conf: DictConfig, device: device) -> None:
+    def __init__(self, conf: DictConfig, device: torch.device) -> None:
         """Initialize a BaseMLModule.
 
         :param conf: Configuration file
         :type conf: DictConfig
         :param device: Pytorch device
-        :type device: device
+        :type torch.device: device
         """
         attrs = self.setup()
-        for k,v in attrs.items():
-            setattr(self, k, v)
+        self.models_dict = attrs['models_dict']
+        self.optimizers_dict = attrs['optimizers_dict']
+        self.schedulers_dict = attrs['schedulers_dict']
+        self.datasets_dict = attrs['datasets_dict']
+        self.loss_fn_dict = attrs['loss_fn_dict']
+        self.transforms_dict = attrs['transforms_dict']
         
         self.device = device
 
@@ -43,6 +55,9 @@ class BaseMLModule(ABC):
         self.loss_fn = self.init_loss_fn(conf)
                 
         self.config = conf
+        self.e = 0  # NOTE: Set by runner added here to fix linting
+        self.val_log: dict = {} # NOTE: Set by runner added here to fix linting
+        self.test_log: dict = {} # NOTE: Set by runner added here to fix linting
     
     def init_model(self, conf: DictConfig) -> nn.Module:
         """Initialize model using the config file. The model choices 
@@ -58,21 +73,15 @@ class BaseMLModule(ABC):
 
         model_conf = conf.model
         model_name = model_conf.name
-        model_load_path = model_conf.load_path if 'load_path' in model_conf else None
 
         model_params = dict(model_conf)
-
-        if model_load_path:
-            del model_params['load_path']
 
         if model_name not in self.models_dict:
             raise NotImplementedError
 
         model_class = self.models_dict[model_name]
+        del model_params['name']
         model = model_class(**model_params)
-
-        if model_load_path:
-            model.load_state_dict(torch.load(model_load_path, map_location='cpu'))
 
         model.to(self.device)
 
@@ -94,7 +103,7 @@ class BaseMLModule(ABC):
         opt_params = dict(opt_conf)
         del opt_params['name']
 
-        if opt_name not in optimizers_dict:
+        if opt_name not in self.optimizers_dict:
             raise NotImplementedError
 
         opt_class = self.optimizers_dict[opt_name]
@@ -125,14 +134,14 @@ class BaseMLModule(ABC):
 
         return loss_fn
 
-    def init_scheduler(self, conf: DictConfig) -> optim.lr_scheduler._LRScheduler:
+    def init_scheduler(self, conf: DictConfig) -> Optional[optim.lr_scheduler._LRScheduler]:
         """Initialize scheduler using the config file. The scheduler choices 
         are available in the optimizers directory in scheduler_dict.py.
 
         :param conf: Configuration file
         :type conf: DictConfig
         :return: Pytorch learning rate scheduler
-        :rtype: optim.lr_scheduler._LRScheduler
+        :rtype: Union[optim.lr_scheduler._LRScheduler, None]
         """
         if "scheduler" not in conf:
             return None
@@ -183,9 +192,9 @@ class BaseMLModule(ABC):
 
         return train_transforms, test_transforms
     
-    def init_generic_dataset(self, conf: DictConfig, mode: str) -> Tuple[Dataset, Dict]:
+    def init_generic_dataset(self, conf: DictConfig, mode: str) -> Tuple[Dataset, dict]:
         """Generic function that sets up a dataset. The code to setup
-        a basic dataset is the same across train val and test. 
+        a basic dataset is the same across train val and test.
 
         :param conf: Configuration file
         :type conf: DictConfig
@@ -195,13 +204,14 @@ class BaseMLModule(ABC):
         containing arguments for the dataset
         :rtype: Tuple[Dataset, Dict]
         """
+        conf = conf.dataset
         mode_conf = conf[mode]
         name = mode_conf.name if 'name' in mode_conf else conf['name']
 
         if name not in self.datasets_dict:
             raise NotImplementedError
         
-        dataset_class = self.dataset_dict[name]
+        dataset_class = self.datasets_dict[name]
         dataset_conf = dict(mode_conf)
         dataset_conf.pop('name', None)
 
@@ -218,8 +228,8 @@ class BaseMLModule(ABC):
         :return: Pytorch Dataset, train
         :rtype: Dataset
         """
-        trainset_class, train_conf = self.init_generic_dataset(conf.dataset, 'train')
-        trainset = trainset_class(**train_conf, transform=self.train_transform)
+        trainset_class, train_conf = self.init_generic_dataset(conf, 'train')
+        trainset = trainset_class(**train_conf, transform=self.train_transform) # type: ignore
         return trainset
     
     def init_valset(self, conf: DictConfig) -> Dataset:
@@ -233,8 +243,8 @@ class BaseMLModule(ABC):
         :return: Pytorch Dataset, val
         :rtype: Dataset
         """
-        valset_class, val_conf = self.init_generic_dataset(conf.dataset, 'val')
-        valset = valset_class(**val_conf, transform=self.test_transform)
+        valset_class, val_conf = self.init_generic_dataset(conf, 'val')
+        valset = valset_class(**val_conf, transform=self.test_transform) # type: ignore
         return valset
     
     def init_testset(self, conf: DictConfig) -> Dataset:
@@ -248,11 +258,11 @@ class BaseMLModule(ABC):
         :return: Pytorch Dataset, test
         :rtype: Dataset
         """
-        testset_class, test_conf = self.init_generic_dataset(conf.dataset, 'test')
-        testset = testset_class(**test_conf, transform=self.test_transform)
+        testset_class, test_conf = self.init_generic_dataset(conf, 'test')
+        testset = testset_class(**test_conf, transform=self.test_transform) # type: ignore
         return testset
     
-    def init_datasets(self, conf: DictConfig) -> Tuple[Dataset, Dataset, Dataset]:
+    def init_datasets(self, conf: DictConfig) -> Tuple[Dataset, Optional[Dataset], Dataset]:
         """Initialize train, val and test datasets, the type of the dataset 
         will be checked based on the type of module that is being run. For example 
         a classification problem should use a classification dataset.
@@ -260,7 +270,7 @@ class BaseMLModule(ABC):
         :param conf: Configuration file
         :type conf: DictConfig
         :return: Pytorch Datasets, train, val and test
-        :rtype: tuple[Dataset, Dataset, Dataset]
+        :rtype: Tuple[Dataset, Union[Dataset, None], Dataset]
         """
         trainset = self.init_trainset(conf)
 
@@ -271,24 +281,24 @@ class BaseMLModule(ABC):
             val_split = dataset_conf.val.split if 'split' in dataset_conf.val else None
             
             if val_split:
-                n = len(trainset)
+                n = len(trainset) # type: ignore
                 val_len = int(val_split * n)
                 train_len = n - val_len
                 trainset, valset = random_split(trainset, [train_len, val_len])
             else:
-                valset = self.init_valset(conf)
+                valset = self.init_valset(conf) # type: ignore
         
         testset = self.init_testset(conf)
 
         return trainset, valset, testset
     
-    def init_dataloaders(self, conf: DictConfig) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    def init_dataloaders(self, conf: DictConfig) -> Tuple[DataLoader, Optional[DataLoader], DataLoader]:
         """Initialize train, val and test dataloaders.
 
         :param conf: Configuration file
         :type conf: DictConfig
         :return: Pytorch Datasets, train, val and test
-        :rtype: tuple[DataLoader, DataLoader, DataLoader]
+        :rtype: Tuple[Dataset, Union[Dataset, None], Dataset]
         """
         dataloader_conf = conf.dataloader
         train_dataloader_conf = dataloader_conf.train
@@ -299,7 +309,7 @@ class BaseMLModule(ABC):
         valloader = DataLoader(self.valset, **val_dataloader_conf) if self.valset is not None else None
         testloader = DataLoader(self.testset, **test_dataloader_conf)
 
-        return trainloader, valloader, testloader
+        return trainloader, valloader, testloader # type: ignore
     
     def scheduler_step(self) -> None:
         """Run one step of the scheduler, meant to be called once per epoch.

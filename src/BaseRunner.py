@@ -38,14 +38,15 @@ class BaseRunner(ABC):
         self.module = self.setup_module(conf)
 
         self.val_acc = float('-inf')
-        self.do_val = bool(self.config.runner.val)
+        self.do_val = bool(conf.runner.val)
 
-        self.test_every_epoch = self.config.runner.test_every_epoch if 'test_every_epoch' in self.config.runner else False
-        self.dry_run = self.config.runner.dry_run if 'dry_run' in self.config.runner else False
+        self.test_every_epoch = conf.runner.test_every_epoch if 'test_every_epoch' in conf.runner else False
+        self.dry_run = conf.runner.dry_run if 'dry_run' in conf.runner else False
         if self.dry_run:
             self.epochs = 1
 
         self.config = conf
+        self.e = 0 # Set for linter, updated over multiple iterations
     
     def setup_device(self, conf: DictConfig) -> device:
         """Setup the device of the model.

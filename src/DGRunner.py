@@ -9,7 +9,7 @@ from modules.DGModule import DGModule
 
 class DGRunner(VisualClassificationRunner):
 
-    def setup_module(self, conf: DictConfig) -> VisualClassificationModule:
+    def setup_module(self, conf: DictConfig) -> DGModule:
         """Initializes the DG classification module.
 
         :param conf: Config file

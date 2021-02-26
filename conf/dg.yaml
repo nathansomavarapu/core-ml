@@ -1,8 +1,8 @@
 defaults:
   - dataset: dg
-  - optimizer: sgd_${defaults.0.dataset.name}
+  # - optimizer: sgd_pacs
   - scheduler: step
-  - model: resnet18_${defaults.0.dataset.name}
+  # - model: resnet18_pacs
   - loss_fn: cross_entropy
   - transforms: basic_aug
   - loader: style_loader

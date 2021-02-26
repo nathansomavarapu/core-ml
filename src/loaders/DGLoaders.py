@@ -1,20 +1,24 @@
 import copy
+import glob
+import os
+import random
+from omegaconf import DictConfig
 from PIL import Image
-from random import random
-from datasets.dg_datasets_dict import dg_path_dict
-from dg_loaders_dict import stylized_dataset_fp_dict
-from abc import ABC
+from datasets.dg_paths_dict import dg_path_dict
+from loaders.dg_paths_dict import stylized_dataset_fp_dict
+from abc import ABC, abstractmethod
+from typing import Tuple
 
 class StyleLoader(ABC):
 
-    def __init__(self, dataset_name: str, target_dataset: str, p: float = 0.1, inter_source=False, intra_source=False) -> None:
+    def __init__(self, dataset_name: str, target: str, p: float = 0.1, inter_source=False, intra_source=False) -> None:
         """Initialize StyleLoader with the the path to style images and 
         the probability of converting to a stylized image.
 
         :param dataset_name: DG dataset name
         :type dataset_name: str
-        :param target_dataset: Target dataset name
-        :type target_dataset: str
+        :param target: Target dataset name
+        :type target: str
         :param p: Probability of returning stylized image, defaults to 0.1
         :type p: float, optional
         :param inter_source: Enables inter-source stylization, defaults to False
@@ -22,21 +26,30 @@ class StyleLoader(ABC):
         :param intra_source: Enables intra-source stylization, defaults to False
         :type intra_source: bool, optional
         """
-        assert dataset_name in stylized_dataset_fp_dict.keys() and dataset_name in dg_path_dict
-        stylize_image_root = stylized_dataset_fp_dict[dataset_name]
+        assert (not intra_source and not inter_source) or (inter_source != intra_source)
+        self.style_source = None
+        if intra_source:
+            self.style_source = 'intra_source'
+        elif inter_source:
+            self.style_source = 'inter_source'
+        else:
+            self.style_source = 'painting'
+
+        style_fp_dict = stylized_dataset_fp_dict[self.style_source]
+        assert dataset_name in style_fp_dict.keys() and dataset_name in dg_path_dict
+
+        stylize_image_root = style_fp_dict[dataset_name]
         self.stylize_image_root = stylize_image_root
 
-        assert target_dataset in dg_path_dict[dataset_name]
+        assert target in dg_path_dict[dataset_name]
         self.other_styles = list(dg_path_dict[dataset_name].keys())
-        self.other_styles.remove(target_dataset)
-
-        assert (not intra_source and not inter_source) or (inter_source != intra_source)
-        self.inter_source = inter_source
-        self.intra_source = intra_source
+        self.other_styles.remove(target)
 
         self.replaced_with_style = False
 
         self.split_point, self.image_fname_len = self.get_split_fname_len(dataset_name)
+
+        self.p = p
     
     def __call__(self, image_path: str) -> Image:
         """This function is called when the object is called,
@@ -73,44 +86,42 @@ class StyleLoader(ABC):
         :return: PIL image.
         :rtype: Image
         """
-        draw = random()
+        draw = random.random()
         self.replaced_with_style = False
 
         if draw < self.p:
             self.replaced_with_style = True
-            orig_path = image_path
+            image_path_split = image_path.split('/')[-self.split_point:]
             
             # Painting Stylization
-            if not self.inter_source and not self.intra_source:
-                image_path = image_path.split('/')[-self.split_point:]
-            else:
-                image_path = image_path.split('/')[-self.split_point]
-                curr_style = image_path[0]
+            if self.style_source == 'inter_source' or self.style_source == 'intra_source':
+                curr_style = image_path_split[0]
 
                 # Inter-source Stylization
-                if self.inter_source:
+                if self.style_source == 'inter_source':
                     styles = copy.copy(self.other_styles)
                     styles.remove(curr_style)
                     new_style = random.choice(styles)
                 # Intra-source Stylization
-                else:
+                elif self.style_source == 'intra_source':
                     new_style = curr_style
                 
-                image_path[0] = curr_style + '_as_' + new_style
+                image_path_split[0] = curr_style + '_as_' + new_style
 
-            image_path = '/'.join(image_path)[:-self.img_fname_len]
-            stylize_search_fp = os.path.join(self.stylize_image_root, curr_fp + '-*')
+            image_path_search = '/'.join(image_path_split)[:-self.image_fname_len]
+            stylize_search_fp = os.path.join(self.stylize_image_root, image_path_search + '-*')
             image_path_list = glob.glob(stylize_search_fp)
-
+            
             assert len(image_path_list) <= 1 and image_path_list is not None
-            if len(image_path) == 0:
-                image_path = orig_path
+            if len(image_path_list) == 0:
                 print('Missing image for style augmentation at, {}. Using original image.'.format(stylize_search_fp))
             else:
                 image_path = image_path_list[0]
         
-        img = Image.open(image_path)
-        return img
+        with open(image_path, 'rb') as f:
+            img = Image.open(f)
+            img.convert('RGB')
+            return img
         
     def was_replaced(self) -> bool:
         """Indicates whether the last image returned was

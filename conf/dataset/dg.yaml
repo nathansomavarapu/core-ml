@@ -1,6 +1,6 @@
 # @package _group_
-name: ??
-target: ??
+name: ???
+target: ???
 train:
   mode: 'train'
 val:

@@ -1,7 +1,7 @@
-from torchvision.datasets import ImageFolder
+import os
+from torch.utils.data import Dataset
 from torchvision.datasets.folder import default_loader
-from torch.data import Transform
-from typing import Any, Callable
+from typing import Any, Callable, Tuple
 from PIL import Image
 
 class FileListDataset(Dataset):
@@ -28,19 +28,20 @@ class FileListDataset(Dataset):
         self.transform = transform
         self.samples = []
         self.classes = set()
+        self.class_to_idx = {}
         self.loader = loader
 
         with open(data_file, 'r') as data_list:
             for line in data_list:
                 img_path, cl = tuple(line.strip().split(' '))
                 cl_name = img_path.split('/')[1]
-                rect_class_idx = int(cl) - class_idx_offset
+                rect_class_idx = int(cl) + class_idx_offset
 
                 self.samples.append((os.path.join(data_root, img_path), rect_class_idx))
                 self.classes.add(rect_class_idx)
                 self.class_to_idx[rect_class_idx] = cl_name
         
-        self.classes = list(self.classes)
+        self.classes = list(self.classes) # type: ignore
     
     def __getitem__(self, idx: int) -> Tuple[Any, int]:
         """Return dataset item by index, applying transformation if they are
