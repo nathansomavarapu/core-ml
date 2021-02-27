@@ -8,6 +8,6 @@ val:
   shuffle: False
   num_workers: 8
 test:
-  batch_size: 100
+  batch_size: 256
   shuffle: False
   num_workers: 4

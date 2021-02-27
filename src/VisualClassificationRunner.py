@@ -52,8 +52,7 @@ class VisualClassificationRunner(BaseRunner):
             'train_loss': total_log_dict['loss'] / train_batches
         }
 
-        if self.log_mlflow:
-            self.log_train_step(train_log, step=self.e)
+        self.log_train_step(train_log, step=self.e)
         
         return train_log
     
@@ -86,12 +85,9 @@ class VisualClassificationRunner(BaseRunner):
             'val_loss': total_log_dict['loss'] / val_batches
         }
 
-        if self.log_mlflow:
-            self.log_val_step(val_log, step=self.e)
-        
-        if val_log['val_acc'] >= self.val_acc:
-            self.module.test_model = copy.deepcopy(self.module.model)
-            self.val_acc = val_log['val_acc']
+        self.log_val_step(val_log, step=self.e)
+
+        self.update_test_model(val_log)
         
         return val_log
         
@@ -125,8 +121,7 @@ class VisualClassificationRunner(BaseRunner):
             'test_loss': total_log_dict['loss'] / test_batches
         }
         
-        if self.log_mlflow:
-            self.log_test_step(test_log, step=self.e)
+        self.log_test_step(test_log, step=self.e)
 
         return test_log
     

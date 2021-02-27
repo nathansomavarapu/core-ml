@@ -201,7 +201,8 @@ class BaseRunner(ABC):
         :param step: Step/iteration of log, defaults to None
         :type step: Union[int,None], optional
         """
-        mlflow.log_metrics(train_log, step=step)
+        if self.log_mlflow:
+            mlflow.log_metrics(train_log, step=step)
     
     def log_val_step(self, val_log: dict, step: Union[int,None] = None) -> None:
         """Logs val metric to mlflow. Keys in dictionary are the 
@@ -212,7 +213,8 @@ class BaseRunner(ABC):
         :param step: Step/iteration of log, defaults to None
         :type step: Union[int,None], optional
         """
-        mlflow.log_metrics(val_log, step=self.e)
+        if self.log_mlflow:
+            mlflow.log_metrics(val_log, step=self.e)
     
     def log_test_step(self, test_log: dict, step: Union[int,None] = None) -> None:
         """Logs test metric to mlflow. Keys in dictionary are the 
@@ -223,7 +225,8 @@ class BaseRunner(ABC):
         :param step: Step/iteration of log, defaults to None
         :type step: Union[int,None], optional
         """
-        mlflow.log_metrics(test_log, step=self.e)
+        if self.log_mlflow:
+            mlflow.log_metrics(test_log, step=self.e)
     
     def update_dict(self, total_dict: dict, iter_dict: dict) -> dict:
         """Updates a dictionary with metrics from a single iteration.
@@ -244,6 +247,18 @@ class BaseRunner(ABC):
         
         return total_dict
     
+    def update_test_model(self, val_log: dict) -> None:
+        """Update the model to be used for testing
+        based on current val loss or accuracy. This method is responsible for
+        model selection.
+
+        :param val_log: Log from one iteration of validation.
+        :type val_log: dict
+        """
+        if val_log['val_acc'] >= self.val_acc:
+            self.module.test_model = copy.deepcopy(self.module.model)
+            self.val_acc = val_log['val_acc']
+
     @abstractmethod
     def setup_module(self, conf: DictConfig) -> BaseMLModule:
         """Initialize module to be used as part of run logic.

@@ -6,9 +6,11 @@ from abc import ABC, abstractmethod
 
 class ClassificationWrapper(nn.Module, ABC):
 
-    def __init__(self, pretrained: bool = False, num_classes: int = 1000, save_path: Optional[str] = None, load_path: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, model_class: nn.Module, pretrained: bool = False, num_classes: int = 1000, save_path: Optional[str] = None, load_path: Optional[str] = None, **kwargs) -> None:
         """Wrapper on for generic classification model to deal with pretraining class mismatch.
 
+        :param model_class: Model class uninitialized
+        :type model_class: nn.Module
         :param pretrained: imagenet pretrained weights, defaults to False
         :type pretrained: bool, optional
         :param num_classes: number of classes, defaults to 1000
@@ -19,8 +21,6 @@ class ClassificationWrapper(nn.Module, ABC):
         :type load_path: Optional[str], optional
         """
         super(ClassificationWrapper, self).__init__()
-
-        model_class = self.get_model_class()
 
         if pretrained and num_classes != 1000:
             self.model = self.initialize_pretrained_model(model_class, pretrained, num_classes, **kwargs)
@@ -49,15 +49,6 @@ class ClassificationWrapper(nn.Module, ABC):
         torch.save(self.model.state_dict(), self.save_path) # type: ignore
     
     @abstractmethod
-    def get_model_class(self) -> nn.Module:
-        """Return the class of the model of interest, this method is an
-        abstract method and must be overridden by the child class.
-
-        :return: Un-instantiated class of model
-        :rtype: nn.Module
-        """
-    
-    @abstractmethod
     def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
         """Return the model instantated with the architecture specific instantiations
         needed based on pretrained and num_classes. The model class attribute should be
@@ -76,8 +67,8 @@ class ClassificationWrapper(nn.Module, ABC):
 
 class alexnet(ClassificationWrapper):
 
-    def get_model_class(self) -> nn.Module:
-        return models.alexnet
+    def __init__(self, **kwargs) -> None:
+        super(alexnet, self).__init__(models.alexnet, **kwargs)
     
     def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
         model = model_class(pretrained=True, **kwargs)
@@ -93,23 +84,24 @@ class resnet(ClassificationWrapper):
 
 class resnet18(resnet):
 
-    def get_model_class(self) -> nn.Module:
-        return models.resnet18
+    def __init__(self, **kwargs) -> None:
+        super(resnet18, self).__init__(models.resnet18, **kwargs)
 
 class resnet34(resnet):
 
-    def get_model_class(self) -> nn.Module:
-        return models.resnet34
+    def __init__(self, **kwargs) -> None:
+        super(resnet34, self).__init__(models.resnet34, **kwargs)
 
 class resnet50(resnet):
 
-    def get_model_class(self) -> nn.Module:
-        return models.resnet50
+    def __init__(self, **kwargs) -> None:
+        super(resnet50, self).__init__(models.resnet50, **kwargs)
 
 class resnet101(resnet):
 
-    def get_model_class(self) -> nn.Module:
-        return models.resnet101
+    def __init__(self, **kwargs) -> None:
+        super(resnet101, self).__init__(models.resnet101, **kwargs)
+
 
 class vgg(ClassificationWrapper):
 
@@ -120,30 +112,30 @@ class vgg(ClassificationWrapper):
 
 class vgg13(vgg):
 
-    def get_model_class(self):
-        return models.vgg13
+    def __init__(self, **kwargs) -> None:
+        super(vgg13, self).__init__(models.vgg13, **kwargs)
 
 class vgg13_bn(vgg):
 
-    def get_model_class(self):
-        return models.vgg13_bn
+    def __init__(self, **kwargs) -> None:
+        super(vgg13_bn, self).__init__(models.vgg13_bn, **kwargs)
 
 class vgg16(vgg):
 
-    def get_model_class(self):
-        return models.vgg16
+    def __init__(self, **kwargs) -> None:
+        super(vgg16, self).__init__(models.vgg16, **kwargs)
 
 class vgg16_bn(vgg):
 
-    def get_model_class(self):
-        return models.vgg16_bn
+    def __init__(self, **kwargs) -> None:
+        super(vgg16_bn, self).__init__(models.vgg16_bn, **kwargs)
 
 class vgg19(vgg):
 
-    def get_model_class(self):
-        return models.vgg19
+    def __init__(self, **kwargs) -> None:
+        super(vgg19, self).__init__(models.vgg19, **kwargs)
 
 class vgg19_bn(vgg):
 
-    def get_model_class(self):
-        return models.vgg19_bn
+    def __init__(self, **kwargs) -> None:
+        super(vgg19_bn, self).__init__(models.vgg19_bn, **kwargs)

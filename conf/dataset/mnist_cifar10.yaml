@@ -1,19 +1,19 @@
 # @package _group_
 # val: null
 train:
-  name: cifar10
+  name: mnist_cifar10
   root: './data'
   download: True
-  split: 0.8
   mode: train
+  split: 0.8
 val:
-  name: cifar10
+  name: mnist_cifar10
   root: './data'
   download: True
-  split: 0.2
   mode: val
+  split: 0.2
 test:
-  name: cifar10 
+  name: mnist_cifar10
   root: './data'
   download: True
   mode: test

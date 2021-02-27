@@ -278,15 +278,15 @@ class BaseMLModule(ABC):
         val = dataset_conf.val
         valset = None
         if val:
-            val_split = dataset_conf.val.split if 'split' in dataset_conf.val else None
+            # val_split = dataset_conf.val.split if 'split' in dataset_conf.val else None
             
-            if val_split:
-                n = len(trainset) # type: ignore
-                val_len = int(val_split * n)
-                train_len = n - val_len
-                trainset, valset = random_split(trainset, [train_len, val_len])
-            else:
-                valset = self.init_valset(conf) # type: ignore
+            # if val_split:
+            #     n = len(trainset) # type: ignore
+            #     val_len = int(val_split * n)
+            #     train_len = n - val_len
+            #     trainset, valset = random_split(trainset, [train_len, val_len])
+            # else:
+            valset = self.init_valset(conf) # type: ignore
         
         testset = self.init_testset(conf)
 
