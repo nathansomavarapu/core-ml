@@ -10,7 +10,7 @@ defaults:
 runner:
   seed: 0
   device: cuda:0
-  epochs: 200
+  epochs: 10
   progress: True
   print_to_term: True
   log_mlflow: True

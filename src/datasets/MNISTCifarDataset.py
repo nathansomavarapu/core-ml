@@ -10,7 +10,7 @@ from datasets.ValSplitDataset import ValSplitDataset
 
 class MNISTCifarDataset(Dataset):
 
-    def __init__(self, root: str = 'data', train: bool = True, total_samples: int = 50000, transform: Callable = None, download: bool = False) -> None:
+    def __init__(self, root: str = 'data', train: bool = True, total_samples: int = 100000, transform: Callable = None, download: bool = False) -> None:
         """Initialize a dataset which comabines MNIST and CIFAR10 images for the simplicity bias
         dataset
 
