@@ -72,7 +72,7 @@ class BaseMLModule(ABC):
         """
 
         model_conf = conf.model
-        model_name = model_conf.name
+        model_name = model_conf._name
 
         model_params = dict(model_conf)
 
@@ -80,7 +80,7 @@ class BaseMLModule(ABC):
             raise NotImplementedError
 
         model_class = self.models_dict[model_name]
-        del model_params['name']
+        model_params = self.remove_internal_conf_params(model_params)
         model = model_class(**model_params)
 
         model.to(self.device)
@@ -98,10 +98,10 @@ class BaseMLModule(ABC):
         :rtype: optim.Optimizer
         """
         opt_conf = conf.optimizer
-        opt_name = opt_conf.name
+        opt_name = opt_conf._name
 
         opt_params = dict(opt_conf)
-        del opt_params['name']
+        opt_params = self.remove_internal_conf_params(opt_params)
 
         if opt_name not in self.optimizers_dict:
             raise NotImplementedError
@@ -121,10 +121,10 @@ class BaseMLModule(ABC):
         :rtype: nn.Module
         """
         loss_fn_conf = conf.loss_fn
-        loss_fn_name = loss_fn_conf.name
+        loss_fn_name = loss_fn_conf._name
 
         loss_fn_params = dict(loss_fn_conf)
-        del loss_fn_params['name']
+        loss_fn_params = self.remove_internal_conf_params(loss_fn_params)
 
         if loss_fn_name not in self.loss_fn_dict:
             raise NotImplementedError
@@ -147,10 +147,10 @@ class BaseMLModule(ABC):
             return None
         
         sched_conf = conf.scheduler
-        sched_name = sched_conf.name
+        sched_name = sched_conf._name
 
         sched_params = dict(sched_conf)
-        del sched_params['name']
+        sched_params = self.remove_internal_conf_params(sched_params)
 
         if sched_name not in self.schedulers_dict:
             raise NotImplementedError
@@ -171,13 +171,13 @@ class BaseMLModule(ABC):
         """
         transform_conf = conf.transforms
         
-        transform_train_name = transform_conf.train.name
+        transform_train_name = transform_conf.train._name
         train_params = dict(transform_conf.train)
-        del train_params['name']
+        train_params = self.remove_internal_conf_params(train_params)
 
-        transform_test_name = transform_conf.test.name
+        transform_test_name = transform_conf.test._name
         test_params = dict(transform_conf.test)
-        del test_params['name']
+        test_params = self.remove_internal_conf_params(test_params)
 
         if transform_train_name not in self.transforms_dict:
             raise NotImplementedError
@@ -206,14 +206,14 @@ class BaseMLModule(ABC):
         """
         conf = conf.dataset
         mode_conf = conf[mode]
-        name = mode_conf.name if 'name' in mode_conf else conf['name']
+        name = mode_conf._name if '_name' in mode_conf else conf['_name']
 
         if name not in self.datasets_dict:
             raise NotImplementedError
         
         dataset_class = self.datasets_dict[name]
         dataset_conf = dict(mode_conf)
-        dataset_conf.pop('name', None)
+        dataset_conf = self.remove_internal_conf_params(dataset_conf)
 
         return dataset_class, dataset_conf
     
@@ -278,14 +278,6 @@ class BaseMLModule(ABC):
         val = dataset_conf.val
         valset = None
         if val:
-            # val_split = dataset_conf.val.split if 'split' in dataset_conf.val else None
-            
-            # if val_split:
-            #     n = len(trainset) # type: ignore
-            #     val_len = int(val_split * n)
-            #     train_len = n - val_len
-            #     trainset, valset = random_split(trainset, [train_len, val_len])
-            # else:
             valset = self.init_valset(conf) # type: ignore
         
         testset = self.init_testset(conf)
@@ -334,6 +326,31 @@ class BaseMLModule(ABC):
             print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
         print(print_str[:-1])
+    
+    def remove_internal_conf_params(self, conf: dict) -> dict:
+        """Remove all parameters from a dictionary with _ in front
+        of the name. These are used to index into internal dictionaries for
+        different module options.
+
+        :param conf: Configuration dictionary
+        :type conf: dict
+        :return: Configuration dictionary with internal params removed
+        :rtype: dict
+        """
+        if len(conf) == 0:
+            return conf
+        
+        delete_list = []
+        for k,v in conf.items():
+            if k[0] == '_':
+                delete_list.append(k)
+            elif isinstance(conf[k], dict):
+                conf[k] = self.remove_internal_conf_params(conf[k])
+        
+        for k in delete_list:
+            del conf[k]
+        
+        return conf
     
     @abstractmethod
     def setup(self) -> dict:

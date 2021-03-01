@@ -1,19 +1,19 @@
 # @package _group_
 # val: null
 train:
-  name: cifar10
+  _name: cifar10
   root: './data'
   download: True
   split: 0.8
   mode: train
 val:
-  name: cifar10
+  _name: cifar10
   root: './data'
   download: True
   split: 0.2
   mode: val
 test:
-  name: cifar10 
+  _name: cifar10 
   root: './data'
   download: True
   mode: test

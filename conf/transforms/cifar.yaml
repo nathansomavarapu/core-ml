@@ -1,5 +1,5 @@
 # @package _group_
 train:
-  name: cifar
+  _name: cifar
 test:
-  name: basic_small
+  _name: basic_small

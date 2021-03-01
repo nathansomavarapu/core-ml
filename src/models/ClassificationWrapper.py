@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from typing import Optional
+from typing import Optional, Union
 from abc import ABC, abstractmethod
+from pytorch_pretrained_vit import ViT
 
 class ClassificationWrapper(nn.Module, ABC):
 
@@ -139,3 +140,14 @@ class vgg19_bn(vgg):
 
     def __init__(self, **kwargs) -> None:
         super(vgg19_bn, self).__init__(models.vgg19_bn, **kwargs)
+
+class vit(ClassificationWrapper):
+
+    def __init__(self, **kwargs) -> None:
+        super(vit, self).__init__(ViT, **kwargs)
+    
+    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+        model_type = kwargs['model_type']
+        kwargs['pretrained'] = pretrained
+        kwargs['num_classes'] = num_classes
+        return model_class(model_type, **kwargs)

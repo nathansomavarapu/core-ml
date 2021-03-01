@@ -1,5 +1,5 @@
 # @package _group_
 train:
-  name: to_tensor
+  _name: to_tensor
 test:
-  name: to_tensor
+  _name: to_tensor

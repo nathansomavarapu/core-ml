@@ -1,5 +1,5 @@
 # @package _group_
-name: ${dataset.name}_style_loader
+_name: ${dataset.name}_style_loader
 dataset_name: ${dataset.name}
 target: ${dataset.target}
 inter_source: False

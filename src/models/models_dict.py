@@ -15,5 +15,5 @@ models_dict = {
     'vgg16_bn' : ClassificationWrapper.vgg16_bn,
     'vgg19': ClassificationWrapper.vgg19,
     'vgg19_bn' : ClassificationWrapper.vgg19_bn,
-
+    'vit': ClassificationWrapper.vit
 }

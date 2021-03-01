@@ -1,4 +1,4 @@
 # @package _group_
-name: resnet18
+_name: resnet18
 pretrained: False
 num_classes: 10

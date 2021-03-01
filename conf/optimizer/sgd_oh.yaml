@@ -1,5 +1,5 @@
 # @package _group_
-name: sgd
+_name: sgd
 lr: 0.001
 weight_decay: 0.0005
 momentum: 0.9

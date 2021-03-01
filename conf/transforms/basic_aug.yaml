@@ -1,5 +1,5 @@
 # @package _group_
 train:
-  name: basic_aug
+  _name: basic_aug
 test:
-  name: basic_im
+  _name: basic_im
