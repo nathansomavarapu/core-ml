@@ -23,9 +23,6 @@ itsdangerous==1.1.0
 Jinja2==2.11.3
 Mako==1.1.4
 MarkupSafe==1.1.1
-mkl-fft==1.2.0
-mkl-random==1.1.1
-mkl-service==2.3.0
 mlflow==1.13.1
 msrest==0.6.21
 mypy==0.812
