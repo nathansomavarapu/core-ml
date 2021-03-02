@@ -39,3 +39,27 @@ class ShiftAugmentation:
     
     def __call__(self, x) -> Any:
         return self.transform(x)
+
+class CifarVITTransform:
+
+    def __init__(self, mean=(0.5,0.5,0.5), std=(0.5,0.5,0.5)):
+        self.transform = transforms.Compose([
+            transforms.RandomResizedCrop((224, 224), scale=(0.05, 1.0)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
+        
+    def __call__(self, x):
+        return self.transform(x)
+
+class BasicVITTransform:
+
+    def __init__(self, mean=(0.5,0.5,0.5), std=(0.5,0.5,0.5)):
+        self.transform = transforms.Compose([
+            transforms.Resize((224,224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
+        
+    def __call__(self, x):
+        return self.transform(x)

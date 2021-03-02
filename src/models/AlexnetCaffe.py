@@ -66,6 +66,6 @@ class AlexnetCaffe(ClassificationWrapper):
     def get_model_class(self) -> nn.Module:
         return alexnet_caffe # type: ignore
     
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
         model = model_class(pretrained=pretrained, num_classes=num_classes, **kwargs)        
         return model

@@ -83,6 +83,9 @@ class BaseMLModule(ABC):
         model_params = self.remove_internal_conf_params(model_params)
         model = model_class(**model_params)
 
+        if '_parallel' in model_conf and model_conf._parallel:
+            model = nn.DataParallel(model)
+        
         model.to(self.device)
 
         return model

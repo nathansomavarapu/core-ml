@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 from typing import Optional, Union
 from abc import ABC, abstractmethod
-from pytorch_pretrained_vit import ViT
+import timm
 
 class ClassificationWrapper(nn.Module, ABC):
 
@@ -23,10 +23,7 @@ class ClassificationWrapper(nn.Module, ABC):
         """
         super(ClassificationWrapper, self).__init__()
 
-        if pretrained and num_classes != 1000:
-            self.model = self.initialize_pretrained_model(model_class, pretrained, num_classes, **kwargs)
-        else:
-            self.model = model_class(pretrained=pretrained, num_classes=num_classes, **kwargs)
+        self.model = self.initialize_model(model_class, pretrained, num_classes, **kwargs)
         
         self.save_path = save_path
 
@@ -50,7 +47,7 @@ class ClassificationWrapper(nn.Module, ABC):
         torch.save(self.model.state_dict(), self.save_path) # type: ignore
     
     @abstractmethod
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
         """Return the model instantated with the architecture specific instantiations
         needed based on pretrained and num_classes. The model class attribute should be
         modified in place. This method is an abstract method and must be overridden by 
@@ -71,16 +68,25 @@ class alexnet(ClassificationWrapper):
     def __init__(self, **kwargs) -> None:
         super(alexnet, self).__init__(models.alexnet, **kwargs)
     
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
-        model = model_class(pretrained=True, **kwargs)
-        model.classifier[6] = nn.Linear(model.classifier[6].in_features, num_classes, bias=True)
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+
+        if pretrained and num_classes != 1000:
+            model = model_class(pretrained=True, **kwargs)
+            model.classifier[6] = nn.Linear(model.classifier[6].in_features, num_classes, bias=True)
+        else:
+            model = model_class(pretrained=pretrained, num_classes=num_classes, **kwargs)
+        
         return model
 
 class resnet(ClassificationWrapper):
 
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
-        model = model_class(pretrained=True, **kwargs)
-        model.fc = nn.Linear(model.fc.in_features, num_classes, bias=True)
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+        if pretrained and num_classes != 1000:
+            model = model_class(pretrained=True, **kwargs)
+            model.fc = nn.Linear(model.fc.in_features, num_classes, bias=True)
+        else:
+            model = model_class(pretrained=pretrained, num_classes=num_classes, **kwargs)
+        
         return model
 
 class resnet18(resnet):
@@ -106,9 +112,13 @@ class resnet101(resnet):
 
 class vgg(ClassificationWrapper):
 
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
-        model = model_class(pretrained=True, **kwargs)
-        model.classifier[6] = nn.Linear(model.classifier[6].in_features, num_classes, bias=True)
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+        if pretrained and num_classes != 1000:
+            model = model_class(pretrained=True, **kwargs)
+            model.classifier[6] = nn.Linear(model.classifier[6].in_features, num_classes, bias=True)
+        else:
+            model = model_class(pretrained=pretrained, num_classes=num_classes, **kwargs)
+        
         return model
 
 class vgg13(vgg):
@@ -144,9 +154,12 @@ class vgg19_bn(vgg):
 class vit(ClassificationWrapper):
 
     def __init__(self, **kwargs) -> None:
-        super(vit, self).__init__(ViT, **kwargs)
+        super(vit, self).__init__(timm.models.vision_transformer.VisionTransformer, **kwargs)
     
-    def initialize_pretrained_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
-        kwargs['pretrained'] = pretrained
-        kwargs['num_classes'] = num_classes
-        return model_class(**kwargs)
+    def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
+        if pretrained:
+            model = timm.create_model(num_classes=num_classes, pretrained=True, **kwargs)
+        else:
+            model = model_class(num_classes=num_classes, **kwargs)
+
+        return model

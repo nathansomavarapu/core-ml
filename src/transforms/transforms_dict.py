@@ -10,5 +10,7 @@ transforms_dict = {
     'basic_small': BasicSmallTransform,
     'cifar': CifarTransform,
     'basic_aug': BasicAugmentation.BasicAugmentation,
-    'shift': BasicAugmentation.ShiftAugmentation
+    'shift': BasicAugmentation.ShiftAugmentation,
+    'cifar_vit': BasicAugmentation.CifarVITTransform,
+    'basic_vit': BasicAugmentation.BasicVITTransform
 }

@@ -1,6 +1,6 @@
 # @package _group_
 train:
-  _name: to_tensor
+  _name: cifar
 test:
   _name: shift
   shift: [7, 0]

@@ -1,0 +1,5 @@
+# @package _group_
+train:
+  _name: cifar_vit
+test:
+  _name: basic_vit
