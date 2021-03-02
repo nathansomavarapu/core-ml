@@ -5,8 +5,7 @@ train:
   std: [0.3081, 0.3081, 0.3081]
   image_size: [28, 28]
 test:
-  _name: affine
-  shift: [5, 0]
+  _name: basic_small
   mean: [0.1307, 0.1307, 0.1307]
   std: [0.3081, 0.3081, 0.3081]
   image_size: [28, 28]

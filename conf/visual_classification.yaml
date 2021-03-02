@@ -1,7 +1,7 @@
 defaults:
   - hydra: no_logging
 runner:
-  seed: 0
+  # seed: 0
   device: cuda:0
   progress: True
   print_to_term: True

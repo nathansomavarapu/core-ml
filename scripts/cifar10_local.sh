@@ -8,4 +8,4 @@ python src/VisualClassificationRunner.py \
 +transforms=cifar \
 +dataset=cifar10 \
 +dataloader=basic_loader \
-runner.epochs=200
++runner.epochs=200

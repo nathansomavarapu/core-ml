@@ -1,8 +1,5 @@
 from omegaconf import DictConfig
 import hydra
-import tqdm
-import torch
-import copy
 
 from VisualClassificationRunner import VisualClassificationRunner
 

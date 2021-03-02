@@ -1,6 +1,6 @@
 # @package _group_
 _name: vit
-_parallel: True
+# _parallel: True
 model_name: vit_base_patch16_224
 pretrained: True
 num_classes: 10

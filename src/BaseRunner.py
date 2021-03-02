@@ -31,7 +31,7 @@ class BaseRunner(ABC):
         """
         self.seed = self.init_seed_cudnn(conf)
         self.device = self.setup_device(conf)
-        self.epochs = conf.runner.epochs
+        self.epochs = conf.runner.epochs if 'epochs' in conf.runner else 0
 
         self.progress, self.print_to_term, self.log_mlflow = self.init_output_options(conf)
 
@@ -258,6 +258,8 @@ class BaseRunner(ABC):
         if val_log['val_acc'] >= self.val_acc:
             self.module.test_model = copy.deepcopy(self.module.model)
             self.val_acc = val_log['val_acc']
+
+            self.module.test_model.save_model()
 
     @abstractmethod
     def setup_module(self, conf: DictConfig) -> BaseMLModule:

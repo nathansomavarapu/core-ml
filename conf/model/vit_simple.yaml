@@ -1,6 +1,8 @@
 # @package _group_
 _name: vit
-name: 'B_16_imagenet1k'
-pretrained: True
 num_classes: 10
-image_size: 224
+patch_size: 7
+img_size: 28
+embed_dim: 64
+depth: 6
+num_heads: 8

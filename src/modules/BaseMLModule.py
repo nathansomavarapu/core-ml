@@ -36,17 +36,17 @@ class BaseMLModule(ABC):
         :type torch.device: device
         """
         attrs = self.setup()
-        self.models_dict = attrs['models_dict']
-        self.optimizers_dict = attrs['optimizers_dict']
-        self.schedulers_dict = attrs['schedulers_dict']
-        self.datasets_dict = attrs['datasets_dict']
-        self.loss_fn_dict = attrs['loss_fn_dict']
-        self.transforms_dict = attrs['transforms_dict']
+        self.models_dict = attrs['models_dict'] if 'models_dict' in attrs else None
+        self.optimizers_dict = attrs['optimizers_dict'] if 'optimizers_dict' in attrs else None
+        self.schedulers_dict = attrs['schedulers_dict'] if 'schedulers_dict' in  attrs else None
+        self.datasets_dict = attrs['datasets_dict'] if 'datasets_dict' in  attrs else None
+        self.loss_fn_dict = attrs['loss_fn_dict'] if 'loss_fn_dict' in  attrs else None
+        self.transforms_dict = attrs['transforms_dict'] if 'transforms_dict' in  attrs else None
         
         self.device = device
 
         self.model = self.init_model(conf)
-        self.test_model = None
+        self.test_model = self.model # NOTE: Might cause unwanted behavior
         self.optimizer = self.init_optimizer(conf)
         self.scheduler = self.init_scheduler(conf)
         self.train_transform, self.test_transform = self.init_transforms(conf)

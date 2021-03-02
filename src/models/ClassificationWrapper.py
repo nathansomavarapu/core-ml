@@ -40,11 +40,16 @@ class ClassificationWrapper(nn.Module, ABC):
         """
         return self.model(x)
     
-    def save_model(self, epoch=None) -> None:
+    def save_model(self, epoch: Optional[int] = None) -> None:
         """Save the model to the path selected during initialization using epoch
-        info if available.
+        info if available. This function is a noop if the class variable save_path
+        is not set during initialization.
+
+        :param epoch: Current epoch when saved, defaults to None
+        :type epoch: Optional[int], optional
         """
-        torch.save(self.model.state_dict(), self.save_path) # type: ignore
+        if self.save_path:
+            torch.save(self.model.state_dict(), self.save_path) # type: ignore
     
     @abstractmethod
     def initialize_model(self, model_class: nn.Module, pretrained: bool, num_classes: int, **kwargs) -> nn.Module:
