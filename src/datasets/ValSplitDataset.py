@@ -54,3 +54,8 @@ class CIFAR10(ValSplitDataset):
 
     def __init__(self, **kwargs) -> None:
         super(CIFAR10, self).__init__(datasets.CIFAR10, **kwargs)
+
+class MNIST(ValSplitDataset):
+
+    def __init__(self, **kwargs) -> None:
+        super(MNIST, self).__init__(datasets.MNIST, **kwargs)

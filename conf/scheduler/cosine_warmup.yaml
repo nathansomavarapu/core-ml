@@ -1,0 +1,4 @@
+# @package _group_
+_name: cosine_warmup
+warmup_steps: 500
+t_total: ${runner.epochs}

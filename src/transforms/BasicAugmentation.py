@@ -1,4 +1,6 @@
 from torchvision import transforms
+import torchvision.transforms.functional as TF
+from typing import Tuple, Any
 
 class BasicAugmentation:
 
@@ -19,4 +21,21 @@ class BasicAugmentation:
             ])
     
     def __call__(self, x):
+        return self.transform(x)
+
+class ShiftAugmentation:
+
+    def __init__(self, shift: Tuple[int, int]) -> None:
+        """Initialize shift augmentations
+
+        :param shift: shift in the x and y direction respectively
+        :type shift: Tuple[int, int]
+        """
+        
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            lambda x: TF.affine(x, 0, shift, 1.0, (0,0))
+        ])
+    
+    def __call__(self, x) -> Any:
         return self.transform(x)

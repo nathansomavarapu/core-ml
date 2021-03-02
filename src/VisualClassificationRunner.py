@@ -158,7 +158,7 @@ class VisualClassificationRunner(BaseRunner):
 
         self.teardown()
 
-@hydra.main(config_path="../conf", config_name="cifar10.yaml")
+@hydra.main(config_path="../conf", config_name="visual_classification.yaml")
 def main(conf: DictConfig):
     runner = VisualClassificationRunner(conf)
     runner.main()

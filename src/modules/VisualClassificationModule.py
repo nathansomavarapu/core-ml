@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 
 from models.models_dict import models_dict
 from optimizers.optimizers_dict import optimizers_dict
-from optimizers.schedulers_dict import schedulers_dict
+from schedulers.schedulers_dict import schedulers_dict
 from datasets.datasets_dict import datasets_dict
 from loss_fn.loss_fn_dict import loss_fn_dict
 from transforms.transforms_dict import transforms_dict
