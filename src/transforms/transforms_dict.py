@@ -11,6 +11,7 @@ transforms_dict = {
     'cifar': CifarTransform,
     'basic_aug': BasicAugmentation.BasicAugmentation,
     'affine': BasicSmallTransform.AffineAugmentation,
+    'random_affine': BasicSmallTransform.RandomAffineAugmentation,
     'cifar_vit': BasicAugmentation.CifarVITTransform,
     'basic_vit': BasicAugmentation.BasicVITTransform
 }
