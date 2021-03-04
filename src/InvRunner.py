@@ -17,7 +17,6 @@ class InvRunner(VisualClassificationRunner):
 @hydra.main(config_path="../conf", config_name="visual_classification.yaml")
 def main(conf: DictConfig):
     assert 'load_path' in conf.model
-     
     runner = InvRunner(conf)
     runner.main()
 

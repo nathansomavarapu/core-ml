@@ -1,11 +1,13 @@
 # @package _group_
 train:
   _name: basic_small
+  padding: 4
   mean: [0.1307, 0.1307, 0.1307]
   std: [0.3081, 0.3081, 0.3081]
-  image_size: [28, 28]
+  image_size: [36, 36]
 test:
   _name: basic_small
+  padding: 4
   mean: [0.1307, 0.1307, 0.1307]
   std: [0.3081, 0.3081, 0.3081]
-  image_size: [28, 28]
+  image_size: [36, 36]

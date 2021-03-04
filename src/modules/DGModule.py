@@ -35,14 +35,14 @@ class DGModule(VisualClassificationModule):
             return default_loader
 
         loader_conf = conf.loader
-        loader_name = loader_conf.name
+        loader_name = loader_conf._name
 
         if loader_name not in stylized_loader_dict:
             raise NotImplementedError
         
         loader_class = stylized_loader_dict[loader_name]
         loader_conf = dict(loader_conf)
-        del loader_conf['name']
+        loader_conf = self.remove_internal_conf_params(loader_conf)
 
         loader = loader_class(**loader_conf)
         return loader

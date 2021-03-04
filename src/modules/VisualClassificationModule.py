@@ -42,8 +42,6 @@ class VisualClassificationModule(BaseMLModule):
         :rtype: Tuple[torch.Tensor, dict]
         """
         images, labels = data
-        if labels.max() > 344 or labels.min() < 0:
-            breakpoint()
         pred = self.model(images)
         loss = self.loss_fn(pred, labels)
         correct_pred = correct(pred, labels)

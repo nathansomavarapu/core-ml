@@ -1,5 +1,5 @@
 # @package _group_
-name: ???
+_name: ???
 target: ???
 train:
   mode: 'train'
