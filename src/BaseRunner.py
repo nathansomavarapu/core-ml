@@ -310,3 +310,12 @@ class BaseRunner(ABC):
         """
         pass
     
+    @abstractmethod
+    def setup_dictionaries(self) -> dict:
+        """Setup dictionaries to map config to componenets of the runner.
+
+        :return: Dictionary containing setup dicts
+        :rtype: dict
+        """
+        pass
+    

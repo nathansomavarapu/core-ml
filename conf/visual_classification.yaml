@@ -9,4 +9,9 @@ runner:
   exp_name: cifar10
   test_every_epoch: True
   val: ${dataset.val}
+  inverter:
+    _name: 'undo_norm'
+    mean: ${transforms.test.mean}
+    std: ${transforms.test.std}
+  save_images: 4
   # dry_run: False

@@ -3,11 +3,31 @@ import hydra
 import tqdm
 import torch
 import copy
+from typing import Tuple, Callable
+from transform_inverters.inverter_dict import inverter_dict
 
 from BaseRunner import BaseRunner
 from modules.VisualClassificationModule import VisualClassificationModule
+from utils.conf_utils import remove_internal_conf_params
+from torchvision.utils import save_image
 
-class VisualClassificationRunner(BaseRunner):        
+class VisualClassificationRunner(BaseRunner):  
+
+    def __init__(self, conf: DictConfig) -> None:
+        self.inverter_dict = self.setup_dictionaries()
+
+        super(VisualClassificationRunner, self).__init__(conf)
+
+        self.save_imgs = None if 'save_images' not in conf.runner else conf.runner.save_images
+        self.im_transform_inverter = self.init_im_transform_inverter(conf)
+    
+    def setup_dictionaries(self) -> dict:
+        """Setup inverter dictionary.
+
+        :return: Inverter Dictionary
+        :rtype: dict
+        """
+        return inverter_dict
 
     def setup_module(self, conf: DictConfig) -> VisualClassificationModule:
         """Initializes the visual classification module.
@@ -115,6 +135,9 @@ class VisualClassificationRunner(BaseRunner):
 
                 if self.dry_run:
                     break
+                
+            if self.save_imgs:
+                self.save_images(data)
 
         test_log = {
             'test_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
@@ -124,6 +147,53 @@ class VisualClassificationRunner(BaseRunner):
         self.log_test_step(test_log, step=self.e)
 
         return test_log
+    
+    def save_images(self, data: Tuple[torch.Tensor,...], epoch: int = None) -> None:
+        """Takes in a batch samples and saves a number of images if the runner
+        conf variable runner.save_images = <num_images> is set.
+
+        :param data: Tuple of image data and labels
+        :type data: Tuple[torch.Tensor,...]
+        :param epoch: Epoch when images were saved, defaults to None
+        :type epoch: int, optional
+        """
+        images, _ = data
+        images = images[:self.save_imgs]
+
+        with torch.no_grad():
+            pred = self.module.test_model(images).cpu()
+        _, labels = pred.max(dim=1)
+
+        images = images.cpu()
+
+        label_to_save = [str(x.item()) for x in labels] # type: ignore
+        label_str = '_'.join(label_to_save)
+
+        if self.im_transform_inverter:
+            im_to_save = self.im_transform_inverter(images)
+        
+        save_image(im_to_save, label_str + '.png')
+    
+    def init_im_transform_inverter(self, conf: DictConfig) -> Callable:
+        """Initialize an optional componenet that will invert image
+        transformations before saving images.
+
+        :param conf: [description]
+        :type conf: DictConfig
+        :return: [description]
+        :rtype: Callable
+        """
+        inverter_conf = conf.runner.inverter
+        inv_name = inverter_conf._name
+
+        if inv_name not in self.inverter_dict:
+            raise NotImplementedError
+        
+        inverter_conf = dict(inverter_conf)
+        inv_params = remove_internal_conf_params(inverter_conf)
+        inverter_class = self.inverter_dict[inv_name]
+        
+        return inverter_class(**inv_params)
     
     def main(self) -> None:
         self.setup()
