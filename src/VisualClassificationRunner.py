@@ -3,31 +3,18 @@ import hydra
 import tqdm
 import torch
 import copy
-from typing import Tuple, Callable
-from transform_inverters.inverter_dict import inverter_dict
+from typing import Tuple, Callable, Any
 
 from BaseRunner import BaseRunner
 from modules.VisualClassificationModule import VisualClassificationModule
-from utils.conf_utils import remove_internal_conf_params
-from torchvision.utils import save_image
 
 class VisualClassificationRunner(BaseRunner):  
 
     def __init__(self, conf: DictConfig) -> None:
-        self.inverter_dict = self.setup_dictionaries()
-
         super(VisualClassificationRunner, self).__init__(conf)
 
-        self.save_imgs = None if 'save_images' not in conf.runner else conf.runner.save_images
-        self.im_transform_inverter = self.init_im_transform_inverter(conf)
-    
-    def setup_dictionaries(self) -> dict:
-        """Setup inverter dictionary.
-
-        :return: Inverter Dictionary
-        :rtype: dict
-        """
-        return inverter_dict
+        self.test_grad = conf.runner.test_grad if 'test_grad' in conf.runner else False
+        self.val_grad = conf.runner.val_grad if 'val_grad' in conf.runner else False
 
     def setup_module(self, conf: DictConfig) -> VisualClassificationModule:
         """Initializes the visual classification module.
@@ -39,7 +26,7 @@ class VisualClassificationRunner(BaseRunner):
         """
         return VisualClassificationModule(conf, self.device)
     
-    def train(self) -> dict:
+    def train(self) -> Any:
         self.module.model.train()
 
         total_log_dict: dict = {}
@@ -49,10 +36,8 @@ class VisualClassificationRunner(BaseRunner):
 
         for data in train_pbar_iter:
             data = self.move_data_to_device(data)
-            loss, log_dict = self.module.forward_train(data)
-            
             self.module.optimizer.zero_grad()
-            loss.backward()
+            log_dict = self.module.forward_train(data)
             self.module.optimizer.step()
 
             total_log_dict = self.update_dict(total_log_dict, log_dict)
@@ -67,22 +52,20 @@ class VisualClassificationRunner(BaseRunner):
             if self.dry_run:
                 break
         
-        train_log = {
-            'train_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
-            'train_loss': total_log_dict['loss'] / train_batches
-        }
+        total_log_dict['train_batches'] = train_batches
+        train_log = self.extract_train_log(total_log_dict)
 
         self.log_train_step(train_log, step=self.e)
         
         return train_log
     
-    def val(self) -> dict:
+    def val(self) -> Any:
         self.module.model.eval()
 
         total_log_dict: dict = {}
         val_batches = len(self.module.valloader)
 
-        with torch.no_grad():
+        with torch.set_grad_enabled(self.val_grad):
             val_pbar_iter = tqdm.tqdm(self.module.valloader, disable=(not self.progress))
             for data in val_pbar_iter:
                 data = self.move_data_to_device(data)
@@ -100,10 +83,8 @@ class VisualClassificationRunner(BaseRunner):
                 if self.dry_run:
                     break
         
-        val_log = {
-            'val_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
-            'val_loss': total_log_dict['loss'] / val_batches
-        }
+        total_log_dict['val_batches'] = val_batches
+        val_log = self.extract_val_log(total_log_dict)
 
         self.log_val_step(val_log, step=self.e)
 
@@ -111,14 +92,14 @@ class VisualClassificationRunner(BaseRunner):
         
         return val_log
         
-    def test(self) -> dict:
+    def test(self) -> Any:
         self.module.test_model.eval()
 
         total_log_dict: dict = {}
         log_dict = {}
         test_batches = len(self.module.testloader)
 
-        with torch.no_grad():
+        with torch.set_grad_enabled(self.test_grad):
             test_pbar_iter = tqdm.tqdm(self.module.testloader, disable=(not self.progress))
             for data in test_pbar_iter:
                 data = self.move_data_to_device(data)
@@ -135,65 +116,59 @@ class VisualClassificationRunner(BaseRunner):
 
                 if self.dry_run:
                     break
-                
-            if self.save_imgs:
-                self.save_images(data)
 
-        test_log = {
-            'test_acc': (total_log_dict['correct'] / total_log_dict['total']) * 100.0,
-            'test_loss': total_log_dict['loss'] / test_batches
-        }
+        total_log_dict['test_batches'] = test_batches
+        test_log = self.extract_test_log(total_log_dict)
         
         self.log_test_step(test_log, step=self.e)
 
         return test_log
     
-    def save_images(self, data: Tuple[torch.Tensor,...], epoch: int = None) -> None:
-        """Takes in a batch samples and saves a number of images if the runner
-        conf variable runner.save_images = <num_images> is set.
+    def extract_generic_log(self, log: dict, mode: str) -> dict:
+        """Extract generic log.
 
-        :param data: Tuple of image data and labels
-        :type data: Tuple[torch.Tensor,...]
-        :param epoch: Epoch when images were saved, defaults to None
-        :type epoch: int, optional
+        :param log: Accumulated log
+        :type log: dict
+        :param mode: train, val or test used to prepend to metrics
+        :type mode: str
+        :return: Dictionary with relevant metrics
+        :rtype: dict
         """
-        images, _ = data
-        images = images[:self.save_imgs]
-
-        with torch.no_grad():
-            pred = self.module.test_model(images).cpu()
-        _, labels = pred.max(dim=1)
-
-        images = images.cpu()
-
-        label_to_save = [str(x.item()) for x in labels] # type: ignore
-        label_str = '_'.join(label_to_save)
-
-        if self.im_transform_inverter:
-            im_to_save = self.im_transform_inverter(images)
-        
-        save_image(im_to_save, label_str + '.png')
+        metric_log = {
+            mode + '_acc': (log['correct'] / log['total']) * 100.0,
+            mode + '_loss': log['loss'] / log[mode + '_batches']
+        }
+        return metric_log
     
-    def init_im_transform_inverter(self, conf: DictConfig) -> Callable:
-        """Initialize an optional componenet that will invert image
-        transformations before saving images.
+    def extract_train_log(self, log: dict) -> dict:
+        """Extract relevant statistics from train log. 
 
-        :param conf: [description]
-        :type conf: DictConfig
-        :return: [description]
-        :rtype: Callable
+        :param log: Accumulated train log
+        :type log: dict
+        :return: Dictionary with relevant metrics
+        :rtype: dict
         """
-        inverter_conf = conf.runner.inverter
-        inv_name = inverter_conf._name
+        return self.extract_generic_log(log, 'train')
+    
+    def extract_val_log(self, log: dict) -> dict:
+        """Extract relevant statistics from train log. 
 
-        if inv_name not in self.inverter_dict:
-            raise NotImplementedError
-        
-        inverter_conf = dict(inverter_conf)
-        inv_params = remove_internal_conf_params(inverter_conf)
-        inverter_class = self.inverter_dict[inv_name]
-        
-        return inverter_class(**inv_params)
+        :param log: Accumulated train log
+        :type log: dict
+        :return: Dictionary with relevant metrics
+        :rtype: dict
+        """
+        return self.extract_generic_log(log, 'val')
+    
+    def extract_test_log(self, log: dict) -> dict:
+        """Extract relevant statistics from train log. 
+
+        :param log: Accumulated train log
+        :type log: dict
+        :return: Dictionary with relevant metrics
+        :rtype: dict
+        """
+        return self.extract_generic_log(log, 'test')
     
     def main(self) -> None:
         self.setup()

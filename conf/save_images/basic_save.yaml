@@ -1,0 +1,6 @@
+# @package _group_
+num_images: 4
+# inverter:
+#     _name: 'undo_norm'
+#     mean: ${transforms.test.mean}
+#     std: ${transforms.test.std}

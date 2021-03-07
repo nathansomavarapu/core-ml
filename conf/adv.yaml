@@ -1,5 +1,7 @@
 defaults:
   - hydra: no_logging
+  - save_images: basic_save
+  - adv: basic_adv
 runner:
   # seed: 0
   device: cuda:0
@@ -7,6 +9,8 @@ runner:
   print_to_term: True
   log_mlflow: True
   exp_name: cifar10
-  # test_every_epoch: True
+  test_every_epoch: True
   val: ${dataset.val}
+  save_images: 4
+  test_grad: True
   # dry_run: False
