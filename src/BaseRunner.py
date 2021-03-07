@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 import hydra.utils as hutils
 from abc import ABC, abstractmethod
 from modules.BaseMLModule import BaseMLModule
-from typing import Union, Tuple
+from typing import Union, Tuple, Any
 
 class BaseRunner(ABC):
     """Abstract class for running modules, this takes care of logging
@@ -274,32 +274,32 @@ class BaseRunner(ABC):
         pass
     
     @abstractmethod
-    def train(self) -> dict:
+    def train(self) -> Any:
         """Run one iteration of training, this is an abstract method and needs to
         be defined by the child class. This method also contains all logging logic.
 
         :return: Dictionary used for logging
-        :rtype: dict
+        :rtype: Any
         """
         pass
 
     @abstractmethod
-    def val(self) -> dict:
+    def val(self) -> Any:
         """Run one iteration of validation, this is an abstract method and needs to
         be defined by the child class. This method also contains all logging logic.
 
         :return: Dictionary used for logging
-        :rtype: dict
+        :rtype: Any
         """
         pass
     
     @abstractmethod
-    def test(self) -> dict:
+    def test(self) -> Any:
         """Run one iteration of testing, this is an abstract method and needs to
         be defined by the child class. This method also contains all logging logic.
 
         :return: Dictionary used for logging
-        :rtype: dict
+        :rtype: Any
         """
         pass
 

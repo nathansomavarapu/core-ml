@@ -19,7 +19,7 @@ class DGModule(VisualClassificationModule):
         :type torch.device: device
         """
         self.loader = self.init_loader(conf)
-        super(VisualClassificationModule, self).__init__(conf, device)
+        super(DGModule, self).__init__(conf, device)
 
     def init_loader(self, conf: DictConfig) -> Callable:
         """Initialize a loader for samples from the dataset. The loader choices

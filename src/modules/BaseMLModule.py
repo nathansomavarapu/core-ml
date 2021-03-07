@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, random_split, DataLoader
+from utils import conf_utils
 
 class BaseMLModule(ABC):
     """Base module which contains the basic attributes of a ml system
@@ -330,30 +331,16 @@ class BaseMLModule(ABC):
             
         print(print_str[:-1])
     
-    def remove_internal_conf_params(self, conf: dict) -> dict:
-        """Remove all parameters from a dictionary with _ in front
-        of the name. These are used to index into internal dictionaries for
-        different module options.
+    def remove_internal_conf_params(self, conf: DictConfig) -> dict:
+        """Remove all parameters with an underscore preceding them,
+        calls a utility function to do this in order to share functionality.
 
-        :param conf: Configuration dictionary
-        :type conf: dict
-        :return: Configuration dictionary with internal params removed
+        :param conf: Configuration
+        :type conf: DictConfig
+        :return: Dict with internal parameters removed
         :rtype: dict
         """
-        if len(conf) == 0:
-            return conf
-        
-        delete_list = []
-        for k,v in conf.items():
-            if k[0] == '_':
-                delete_list.append(k)
-            elif isinstance(conf[k], dict):
-                conf[k] = self.remove_internal_conf_params(conf[k])
-        
-        for k in delete_list:
-            del conf[k]
-        
-        return conf
+        return conf_utils.remove_internal_conf_params(conf)
     
     @abstractmethod
     def setup(self) -> dict:
