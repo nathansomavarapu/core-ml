@@ -20,12 +20,10 @@ from torchvision.utils import save_image
 class VisualClassificationModule(BaseMLModule):
 
     def __init__(self, conf: DictConfig, device: torch.device) -> None:
-
         super(VisualClassificationModule, self).__init__(conf, device)
         self.inverter_dict = inverter_dict
         self.im_transform_inverter, self.num_images_save = self.init_im_transform_inverter(conf)
         self.saved = False
-
     
     def setup(self) -> dict:
         """Overrides parent class method to setup dictionaries to be used for

@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, random_split, DataLoader
-from utils.conf_utils import remove_internal_conf_params
+from utils import conf_utils
 
 class BaseMLModule(ABC):
     """Base module which contains the basic attributes of a ml system
@@ -81,7 +81,7 @@ class BaseMLModule(ABC):
             raise NotImplementedError
 
         model_class = self.models_dict[model_name]
-        model_params = remove_internal_conf_params(model_params)
+        model_params = self.remove_internal_conf_params(model_params)
         model = model_class(**model_params)
 
         if '_parallel' in model_conf and model_conf._parallel:
@@ -105,7 +105,7 @@ class BaseMLModule(ABC):
         opt_name = opt_conf._name
 
         opt_params = dict(opt_conf)
-        opt_params = remove_internal_conf_params(opt_params)
+        opt_params = self.remove_internal_conf_params(opt_params)
 
         if opt_name not in self.optimizers_dict:
             raise NotImplementedError
@@ -128,7 +128,7 @@ class BaseMLModule(ABC):
         loss_fn_name = loss_fn_conf._name
 
         loss_fn_params = dict(loss_fn_conf)
-        loss_fn_params = remove_internal_conf_params(loss_fn_params)
+        loss_fn_params = self.remove_internal_conf_params(loss_fn_params)
 
         if loss_fn_name not in self.loss_fn_dict:
             raise NotImplementedError
@@ -154,7 +154,7 @@ class BaseMLModule(ABC):
         sched_name = sched_conf._name
 
         sched_params = dict(sched_conf)
-        sched_params = remove_internal_conf_params(sched_params)
+        sched_params = self.remove_internal_conf_params(sched_params)
 
         if sched_name not in self.schedulers_dict:
             raise NotImplementedError
@@ -177,11 +177,11 @@ class BaseMLModule(ABC):
         
         transform_train_name = transform_conf.train._name
         train_params = dict(transform_conf.train)
-        train_params = remove_internal_conf_params(train_params)
+        train_params = self.remove_internal_conf_params(train_params)
 
         transform_test_name = transform_conf.test._name
         test_params = dict(transform_conf.test)
-        test_params = remove_internal_conf_params(test_params)
+        test_params = self.remove_internal_conf_params(test_params)
 
         if transform_train_name not in self.transforms_dict:
             raise NotImplementedError
@@ -217,7 +217,7 @@ class BaseMLModule(ABC):
         
         dataset_class = self.datasets_dict[name]
         dataset_conf = dict(mode_conf)
-        dataset_conf = remove_internal_conf_params(dataset_conf)
+        dataset_conf = self.remove_internal_conf_params(dataset_conf)
 
         return dataset_class, dataset_conf
     
@@ -330,6 +330,17 @@ class BaseMLModule(ABC):
             print_str = print_str + '{} : {:.4f}, '.format(k, v)
             
         print(print_str[:-1])
+    
+    def remove_internal_conf_params(self, conf: DictConfig) -> dict:
+        """Remove all parameters with an underscore preceding them,
+        calls a utility function to do this in order to share functionality.
+
+        :param conf: Configuration
+        :type conf: DictConfig
+        :return: Dict with internal parameters removed
+        :rtype: dict
+        """
+        return conf_utils.remove_internal_conf_params(conf)
     
     @abstractmethod
     def setup(self) -> dict:
