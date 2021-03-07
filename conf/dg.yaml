@@ -7,7 +7,6 @@ defaults:
   - dataloader: dg_loader
   - hydra: no_logging
 runner:
-  seed: 0
   device: cuda
   epochs: 80
   progress: True
