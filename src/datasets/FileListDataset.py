@@ -34,7 +34,7 @@ class FileListDataset(Dataset):
         with open(data_file, 'r') as data_list:
             for line in data_list:
                 img_path, cl = tuple(line.strip().split(' '))
-                cl_name = img_path.split('/')[1]
+                cl_name = img_path.split('/')[1] if '/' in img_path else cl
                 rect_class_idx = int(cl) + class_idx_offset
 
                 self.samples.append((os.path.join(data_root, img_path), rect_class_idx))

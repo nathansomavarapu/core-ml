@@ -1,7 +1,6 @@
 defaults:
   - optimizer: sgd_cifar10
   - scheduler: cosine
-  - model: resnet18
   - loss_fn: cross_entropy
   - transforms: to_tensor
   - dataset: mnist_cifar10

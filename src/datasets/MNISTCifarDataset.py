@@ -109,8 +109,12 @@ class MNISTCifarDataset(Dataset):
 
 class MNISTCifar10Wrapper(ValSplitDataset):
 
-    def __init__(self, **kwargs):
-        super(MNISTCifar10Wrapper, self).__init__(MNISTCifarDataset, **kwargs)
+    def __init__(self, mode='train', split=0.2, transform=None, **kwargs):
+        train = (mode == 'train' or mode == 'val')
+        dataset = None
+        if (train and not ValSplitDataset.train_dataset) or (not train and not ValSplitDataset.test_dataset):
+            dataset = MNISTCifarDataset(train=train, **kwargs)
+        super(MNISTCifar10Wrapper, self).__init__(dataset, mode=mode, split=split, transform=transform)
     
     def set_randomized_test(self, randomize_samples: str):
         self.dataset.set_randomized_test(randomize_samples)

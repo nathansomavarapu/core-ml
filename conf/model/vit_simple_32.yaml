@@ -1,0 +1,8 @@
+# @package _group_
+_name: vit
+num_classes: 10
+patch_size: 16
+img_size: 32
+embed_dim: 64
+depth: 6
+num_heads: 8

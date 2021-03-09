@@ -1,15 +1,15 @@
 # @package _group_
 train:
-  _name: affine
+  _name: random_affine
   padding: 4
-  shift: [.11,0]
+  angle: 40
   mean: [0.1307, 0.1307, 0.1307]
   std: [0.3081, 0.3081, 0.3081]
   image_size: [36, 36]
 test:
-  _name: affine
+  _name: random_affine
   padding: 4
-  shift: [.11,0]
+  angle: 40
   mean: [0.1307, 0.1307, 0.1307]
   std: [0.3081, 0.3081, 0.3081]
   image_size: [36, 36]
