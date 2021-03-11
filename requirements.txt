@@ -7,7 +7,6 @@ cffi==1.14.4
 chardet==4.0.0
 click==7.1.2
 cloudpickle==1.6.0
-cryptography==3.3.1
 databricks-cli==0.14.1
 docker==4.4.1
 entrypoints==0.3
