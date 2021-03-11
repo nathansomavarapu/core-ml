@@ -118,4 +118,4 @@ tmp/
 transforms/models/
 analysis/accuracy_shape_texture
 ./data
-scripts/*_slurm.sh
+scripts/*slurm*.sh
