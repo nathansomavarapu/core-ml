@@ -87,7 +87,7 @@ class DGModule(VisualClassificationModule):
         """Overrides the parent dataset initialization function to take the dataset name
         and target dataset config values in differently.
 
-        :param conf: Configuration file
+        :param conf: Configuration file at the 
         :type conf: DictConfig
         :param mode: train, val or test
         :type mode: str
@@ -95,6 +95,6 @@ class DGModule(VisualClassificationModule):
         :rtype: Tuple[Dataset, Dict]
         """
         dataset_class, dataset_conf = super().init_generic_dataset(conf, mode)
-        dataset_conf['target'] = conf.dataset.target
+        dataset_conf['target'] = conf.target
 
         return dataset_class, dataset_conf

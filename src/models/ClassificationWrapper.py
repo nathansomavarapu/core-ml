@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 from abc import ABC, abstractmethod
 import timm
 
 class ClassificationWrapper(nn.Module, ABC):
 
-    def __init__(self, model_class: nn.Module, pretrained: bool = False, num_classes: int = 1000, save_path: Optional[str] = None, load_path: Optional[str] = None, **kwargs) -> None:
+    def __init__(self, model_class: nn.Module, pretrained: bool = False, num_classes: int = 1000, save_path: Optional[str] = None, load_path: Optional[str] = None, class_mapper: Optional[Callable] = None, **kwargs) -> None:
         """Wrapper on for generic classification model to deal with pretraining class mismatch.
 
         :param model_class: Model class uninitialized
@@ -20,6 +20,8 @@ class ClassificationWrapper(nn.Module, ABC):
         :type save_path: Optional[str], optional
         :param load_path: Path to load model from, None indicates no model to load, defaults to None
         :type load_path: Optional[str], optional
+        :param class_mapper: Maps probabilities to a subset of probabilities if needed, defaults to None
+        :type class_mapper: Optional[Callable], optional
         """
         super(ClassificationWrapper, self).__init__()
 
@@ -29,7 +31,9 @@ class ClassificationWrapper(nn.Module, ABC):
 
         if load_path:
             self.model.load_state_dict(torch.load(load_path, map_location='cpu'))
-    
+        
+        self.class_mapper = class_mapper
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Runs a forward pass through the network.
 
@@ -38,7 +42,12 @@ class ClassificationWrapper(nn.Module, ABC):
         :return: Output logits tensor
         :rtype: torch.Tensor
         """
-        return self.model(x)
+        pred = self.model(x)
+
+        if self.class_mapper:
+            pred = self.class_mapper(pred)
+
+        return pred
     
     def save_model(self, epoch: Optional[int] = None) -> None:
         """Save the model to the path selected during initialization using epoch

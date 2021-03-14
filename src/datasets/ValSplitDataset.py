@@ -29,12 +29,12 @@ class ValSplitDataset(Dataset):
 
         self.dataset = train_dataset if mode == 'train' or mode == 'val' else test_dataset
         dataset_len = len(self.dataset) # type: ignore
-
+        
         train_bound = int(dataset_len * split)
         if mode == 'train':
             self.valid_indices = list(range(train_bound))
         if mode == 'val':
-            self.valid_indices = list(range(train_bound, dataset_len))
+            self.valid_indices = list(range(dataset_len - train_bound, dataset_len))
         if mode == 'test':
             self.valid_indices = list(range(dataset_len))
         

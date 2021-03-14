@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Tuple, Optional
+from typing import Any, Tuple, Optional, Callable
 from omegaconf import DictConfig
 import mlflow
 
@@ -43,24 +43,62 @@ class BaseMLModule(ABC):
         self.datasets_dict = attrs['datasets_dict'] if 'datasets_dict' in  attrs else None
         self.loss_fn_dict = attrs['loss_fn_dict'] if 'loss_fn_dict' in  attrs else None
         self.transforms_dict = attrs['transforms_dict'] if 'transforms_dict' in  attrs else None
+        self.class_mapper_dict = attrs['class_mapper_dict'] if 'class_mapper_dict' in attrs else None
         
         self.device = device
 
-        self.model = self.init_model(conf)
-        self.test_model = self.model # NOTE: Might cause unwanted behavior
-        self.optimizer = self.init_optimizer(conf)
-        self.scheduler = self.init_scheduler(conf)
-        self.train_transform, self.test_transform = self.init_transforms(conf)
-        self.trainset, self.valset, self.testset = self.init_datasets(conf)
-        self.trainloader, self.valloader, self.testloader = self.init_dataloaders(conf)
-        self.loss_fn = self.init_loss_fn(conf)
+        self.class_mapper = self.init_class_mapper(conf) if self.class_mapper_dict else None
+        self.model = self.init_model(conf) if self.models_dict else None
+        self.test_model = self.model
+        self.optimizer = self.init_optimizer(conf) if self.optimizers_dict else None
+        self.scheduler = self.init_scheduler(conf) if self.schedulers_dict else None
+
+        self.train_transform = self.test_transform = None
+        if self.datasets_dict:
+            self.train_transform, self.test_transform = self.init_transforms(conf)
+        
+        self.trainset = self.valset = self.testset = None
+        if self.datasets_dict:
+            self.trainset, self.valset, self.testset = self.init_datasets(conf)
+        
+        self.trainloader = self.valloader = self.testloader = None
+        if self.datasets_dict:
+            self.trainloader, self.valloader, self.testloader = self.init_dataloaders(conf) #type: ignore
+        
+        self.loss_fn = self.init_loss_fn(conf) if self.loss_fn_dict else None
                 
         self.config = conf
         self.e = 0  # NOTE: Set by runner added here to fix linting
         self.val_log: dict = {} # NOTE: Set by runner added here to fix linting
         self.test_log: dict = {} # NOTE: Set by runner added here to fix linting
     
-    def init_model(self, conf: DictConfig) -> nn.Module:
+    def init_class_mapper(self, conf: DictConfig) -> Optional[Callable]:
+        """Initialize a class mapper which takes classes from a model
+        and maps them to a subset for testing. This is used for example
+        in the cue-conflict experiments.
+
+        :param conf: Configuration
+        :type conf: DictConfig
+        :return: Class mapper object
+        :rtype: Optional[Callable]
+        """
+
+        if 'class_mapper' not in conf:
+            return None
+
+        cmapper_conf = conf.class_mapper
+        cmapper_name = cmapper_conf._name
+        
+        if cmapper_name not in self.class_mapper_dict:
+            raise NotImplementedError
+
+        mapper_cl = self.class_mapper_dict[cmapper_name]
+        cmapper_params = dict(cmapper_conf)
+        cmapper_params = self.remove_internal_conf_params(cmapper_params)
+
+        return mapper_cl(**cmapper_params)
+
+    def init_model(self, conf: DictConfig) -> Optional[nn.Module]:
         """Initialize model using the config file. The model choices 
         are available in the models directory in models_dict.py. This
         function sets up the model's device as well.
@@ -69,8 +107,10 @@ class BaseMLModule(ABC):
         :type conf: DictConfig
         :raises NotImplementedError: Raised when model name not supported
         :return: Pytorch Module
-        :rtype: nn.Module
+        :rtype: Optional[nn.Module]
         """
+        if "model" not in conf:
+            return None
 
         model_conf = conf.model
         model_name = model_conf._name
@@ -82,7 +122,7 @@ class BaseMLModule(ABC):
 
         model_class = self.models_dict[model_name]
         model_params = self.remove_internal_conf_params(model_params)
-        model = model_class(**model_params)
+        model = model_class(class_mapper=self.class_mapper, **model_params)
 
         if '_parallel' in model_conf and model_conf._parallel:
             model = nn.DataParallel(model)
@@ -91,7 +131,7 @@ class BaseMLModule(ABC):
 
         return model
 
-    def init_optimizer(self, conf: DictConfig) -> optim.Optimizer:
+    def init_optimizer(self, conf: DictConfig) -> Optional[optim.Optimizer]:
         """Initialize optimizer using the config file. The optimizer choices 
         are available in the optimizers directory in optimizers_dict.py.
 
@@ -99,8 +139,11 @@ class BaseMLModule(ABC):
         :type conf: DictConfig
         :raises NotImplementedError: Raised when optimizer name not supported
         :return: Pytorch Optimizer
-        :rtype: optim.Optimizer
+        :rtype: Optional[optim.Optimizer]
         """
+        if "optimizer" not in conf:
+            return None
+        
         opt_conf = conf.optimizer
         opt_name = opt_conf._name
 
@@ -111,19 +154,22 @@ class BaseMLModule(ABC):
             raise NotImplementedError
 
         opt_class = self.optimizers_dict[opt_name]
-        opt = opt_class(self.model.parameters(), **opt_params)
+        opt = opt_class(self.model.parameters(), **opt_params) # type: ignore
 
         return opt
     
-    def init_loss_fn(self, conf: DictConfig) -> nn.Module:
+    def init_loss_fn(self, conf: DictConfig) -> Optional[nn.Module]:
         """Initialize the loss function using the config file. The loss function
         choices are avaliable in the loss function directory in loss_fn_dict.py.
 
         :param conf: Configuration file
         :type conf: DictConfig
         :return: Pytorch Loss Function Module
-        :rtype: nn.Module
+        :rtype: Optional[nn.Module]
         """
+        if 'loss_fn' not in conf:
+            return None
+        
         loss_fn_conf = conf.loss_fn
         loss_fn_name = loss_fn_conf._name
 
@@ -173,26 +219,37 @@ class BaseMLModule(ABC):
         :return: Pytorch image transform, this can be an object or a module
         :rtype: Any
         """
+        if 'transforms' not in conf:
+            return None, None
+        
         transform_conf = conf.transforms
+
+        train_transforms = None
+        if "train" in transform_conf:
         
-        transform_train_name = transform_conf.train._name
-        train_params = dict(transform_conf.train)
-        train_params = self.remove_internal_conf_params(train_params)
+            transform_train_name = transform_conf.train._name
+            train_params = dict(transform_conf.train)
+            train_params = self.remove_internal_conf_params(train_params)
 
-        transform_test_name = transform_conf.test._name
-        test_params = dict(transform_conf.test)
-        test_params = self.remove_internal_conf_params(test_params)
-
-        if transform_train_name not in self.transforms_dict:
-            raise NotImplementedError
-        if transform_test_name not in self.transforms_dict:
-            raise NotImplementedError
+            if transform_train_name not in self.transforms_dict:
+                raise NotImplementedError
+            
+            transform_train_class = self.transforms_dict[transform_train_name]
+            train_transforms = transform_train_class(**train_params)
         
-        transform_train_class = self.transforms_dict[transform_train_name]
-        train_transforms = transform_train_class(**train_params)
+        test_transforms = None
+        if 'test' in transform_conf:
 
-        transform_test_class = self.transforms_dict[transform_test_name]
-        test_transforms = transform_test_class(**test_params)
+            transform_test_name = transform_conf.test._name if 'test' in transform_conf else None
+            test_params = dict(transform_conf.test)
+            test_params = self.remove_internal_conf_params(test_params)
+
+        
+            if transform_test_name not in self.transforms_dict:
+                raise NotImplementedError
+        
+            transform_test_class = self.transforms_dict[transform_test_name]
+            test_transforms = transform_test_class(**test_params)
 
         return train_transforms, test_transforms
     
@@ -200,7 +257,8 @@ class BaseMLModule(ABC):
         """Generic function that sets up a dataset. The code to setup
         a basic dataset is the same across train val and test.
 
-        :param conf: Configuration file
+        :param conf: Configuration file at the point of the dataset
+        config, i.e. conf.dataset is passed in
         :type conf: DictConfig
         :param mode: Dataset mode, train, val or test
         :type mode: str
@@ -208,7 +266,6 @@ class BaseMLModule(ABC):
         containing arguments for the dataset
         :rtype: Tuple[Dataset, Dict]
         """
-        conf = conf.dataset
         mode_conf = conf[mode]
         name = mode_conf._name if '_name' in mode_conf else conf['_name']
 
@@ -266,7 +323,7 @@ class BaseMLModule(ABC):
         testset = testset_class(**test_conf, transform=self.test_transform) # type: ignore
         return testset
     
-    def init_datasets(self, conf: DictConfig) -> Tuple[Dataset, Optional[Dataset], Dataset]:
+    def init_datasets(self, conf: DictConfig) -> Tuple[Optional[Dataset], Optional[Dataset], Optional[Dataset]]:
         """Initialize train, val and test datasets, the type of the dataset 
         will be checked based on the type of module that is being run. For example 
         a classification problem should use a classification dataset.
@@ -276,15 +333,22 @@ class BaseMLModule(ABC):
         :return: Pytorch Datasets, train, val and test
         :rtype: Tuple[Dataset, Union[Dataset, None], Dataset]
         """
-        trainset = self.init_trainset(conf)
-
         dataset_conf = conf.dataset
-        val = dataset_conf.val
+
+        train = dataset_conf.train if 'train' in dataset_conf else None
+        trainset = None
+        if train:
+            trainset = self.init_trainset(dataset_conf)
+        
+        val = dataset_conf.val if 'val' in dataset_conf else None
         valset = None
         if val:
-            valset = self.init_valset(conf) # type: ignore
+            valset = self.init_valset(dataset_conf) # type: ignore
         
-        testset = self.init_testset(conf)
+        test = dataset_conf.test if 'test' in dataset_conf else None
+        testset = None
+        if test:
+            testset = self.init_testset(dataset_conf)
 
         return trainset, valset, testset
     
@@ -301,9 +365,9 @@ class BaseMLModule(ABC):
         val_dataloader_conf = dataloader_conf.val
         test_dataloader_conf = dataloader_conf.test
 
-        trainloader = DataLoader(self.trainset, **train_dataloader_conf)
-        valloader = DataLoader(self.valset, **val_dataloader_conf) if self.valset is not None else None
-        testloader = DataLoader(self.testset, **test_dataloader_conf)
+        trainloader = DataLoader(self.trainset, **train_dataloader_conf) if self.trainset else None # type: ignore
+        valloader = DataLoader(self.valset, **val_dataloader_conf) if self.valset else None # type: ignore
+        testloader = DataLoader(self.testset, **test_dataloader_conf) if self.testset else None # type: ignore
 
         return trainloader, valloader, testloader # type: ignore
     
@@ -331,7 +395,7 @@ class BaseMLModule(ABC):
             
         print(print_str[:-1])
     
-    def remove_internal_conf_params(self, conf: DictConfig) -> dict:
+    def remove_internal_conf_params(self, conf: dict) -> dict:
         """Remove all parameters with an underscore preceding them,
         calls a utility function to do this in order to share functionality.
 

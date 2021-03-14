@@ -3,7 +3,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
-import utils.human_categories as hc
+import class_mapper.human_categories as hc
 
 
 class ProbabilitiesToDecisionMapping(ABC):
@@ -35,7 +35,7 @@ class ImageNetProbabilitiesTo16ClassesMapping(ProbabilitiesToDecisionMapping):
         self.aggregation_function = aggregation_function
 
 
-    def probabilities_to_decision(self, probabilities):
+    def __call__(self, probabilities):
         """Return one of 16 categories for vector of probabilities.
 
         Keyword arguments:

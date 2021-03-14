@@ -27,6 +27,7 @@ class VisualClassificationRunner(BaseRunner):
         return VisualClassificationModule(conf, self.device)
     
     def train(self) -> Any:
+        assert self.module.trainloader is not None
         self.module.model.train()
 
         total_log_dict: dict = {}
@@ -60,6 +61,7 @@ class VisualClassificationRunner(BaseRunner):
         return train_log
     
     def val(self) -> Any:
+        assert self.module.valloader is not None
         self.module.model.eval()
 
         total_log_dict: dict = {}
@@ -93,6 +95,7 @@ class VisualClassificationRunner(BaseRunner):
         return val_log
         
     def test(self) -> Any:
+        assert self.module.testloader is not None
         self.module.test_model.eval()
 
         total_log_dict: dict = {}

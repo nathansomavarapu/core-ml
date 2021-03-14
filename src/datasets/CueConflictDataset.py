@@ -6,7 +6,7 @@ from torchvision.datasets import ImageFolder
 class CueConflictDataset(ImageFolder):
 
     def __init__(self, root: str, transform: Optional[Callable] = None, shape_texture: str = 'shape') -> None:
-        """[Initialize Cue Conflict Dataset, this is a test only dataset
+        """Initialize Cue Conflict Dataset, this is a test only dataset
 
         :param root: Image root for the dataset
         :type root: str

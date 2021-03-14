@@ -10,7 +10,7 @@ CREDIT: https://github.com/rgeirhos/texture-vs-shape
 import numpy as np
 import os
 
-import utils.wordnet_functions as wf
+import class_mapper.wordnet_functions as wf
 
 
 def compute_imagenet_indices_for_category(category):

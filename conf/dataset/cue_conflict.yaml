@@ -1,0 +1,8 @@
+# @package _group_
+train: null
+val: null
+test:
+  _name: cue_conflict 
+  root: './data'
+  download: True
+  mode: test
