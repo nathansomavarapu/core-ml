@@ -19,13 +19,23 @@ class CueConflictDataset(ImageFolder):
         super(CueConflictDataset, self).__init__(root, transform=transform)
 
         self.texture_cl = []
+        remove_samples_idxs: list = []
 
-        for sample in self.samples: # type: ignore
-            img_path, _ = sample
-            shape_cl, texture_cl = img_path[:-4].split('/')[-1].split('-')
-            shape_cl = shape_cl[:-1]
+        for i, sample in enumerate(self.samples): # type: ignore
+            img_path, shape_cl = sample
+            _, texture_cl = img_path[:-4].split('/')[-1].split('-')
             texture_cl = texture_cl[:-1]
-            self.texture_cl.append(self.class_to_idx[texture_cl])
+            texture_cl = self.class_to_idx[texture_cl]
+            if texture_cl != shape_cl:
+                self.texture_cl.append(texture_cl)
+            else:
+                remove_samples_idxs.append(i)
+        
+        remove_samples_idxs = sorted(remove_samples_idxs, reverse=True)
+        for i in remove_samples_idxs:
+            del self.samples[i]
+        
+        assert len(self.texture_cl) == len(self.samples)
         
         self.shape_texture = shape_texture
 

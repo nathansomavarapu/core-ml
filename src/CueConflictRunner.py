@@ -3,7 +3,7 @@ import hydra
 
 from VisualClassificationRunner import VisualClassificationRunner
 
-class CueConflictRunner(VisualClassificationRunner):        
+class CueConflictRunner(VisualClassificationRunner):      
         
     def test(self) -> dict:
         """Test the model on the standard dataset and the randomized datasets.
@@ -29,7 +29,6 @@ class CueConflictRunner(VisualClassificationRunner):
 
 @hydra.main(config_path="../conf", config_name="visual_classification.yaml")
 def main(conf: DictConfig):
-    breakpoint()
     runner = CueConflictRunner(conf)
     runner.main()
 

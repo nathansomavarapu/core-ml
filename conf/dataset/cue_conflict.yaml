@@ -3,6 +3,4 @@ train: null
 val: null
 test:
   _name: cue_conflict 
-  root: './data'
-  download: True
-  mode: test
+  root: '/srv/share3/nsomavarapu3/datasets/style-transfer-preprocessed-512/'

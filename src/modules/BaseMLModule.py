@@ -56,11 +56,11 @@ class BaseMLModule(ABC):
         self.train_transform = self.test_transform = None
         if self.datasets_dict:
             self.train_transform, self.test_transform = self.init_transforms(conf)
-        
+                
         self.trainset = self.valset = self.testset = None
         if self.datasets_dict:
             self.trainset, self.valset, self.testset = self.init_datasets(conf)
-        
+                
         self.trainloader = self.valloader = self.testloader = None
         if self.datasets_dict:
             self.trainloader, self.valloader, self.testloader = self.init_dataloaders(conf) #type: ignore

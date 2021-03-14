@@ -12,6 +12,7 @@ from datasets.datasets_dict import datasets_dict
 from loss_fn.loss_fn_dict import loss_fn_dict
 from transforms.transforms_dict import transforms_dict
 from transform_inverters.inverter_dict import inverter_dict
+from class_mapper.class_mapper_dict import class_mapper_dict
 
 from utils.conf_utils import remove_internal_conf_params
 from torchvision.utils import save_image
@@ -39,7 +40,8 @@ class VisualClassificationModule(BaseMLModule):
             'schedulers_dict': schedulers_dict,
             'datasets_dict': datasets_dict,
             'loss_fn_dict': loss_fn_dict,
-            'transforms_dict': transforms_dict
+            'transforms_dict': transforms_dict,
+            'class_mapper_dict': class_mapper_dict
         }
         return attrs
     

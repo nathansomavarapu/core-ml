@@ -1,6 +1,6 @@
 # CREDIT: https://github.com/rgeirhos/texture-vs-shape
 
-import numpy as np
+import torch
 from abc import ABC, abstractmethod
 
 import class_mapper.human_categories as hc
@@ -9,7 +9,7 @@ import class_mapper.human_categories as hc
 class ProbabilitiesToDecisionMapping(ABC):
 
     @abstractmethod
-    def probabilities_to_decision(self, probabilities):
+    def __call__(self, probabilities):
         pass
 
 
@@ -21,42 +21,33 @@ class ProbabilitiesToDecisionMapping(ABC):
                          (softmax output: all values should be
                          within [0,1])
         """
-
-
-        assert type(probabilities) is np.ndarray
-        assert (probabilities >= 0.0).all() and (probabilities <= 1.0).all()
-
+        assert type(probabilities) is torch.Tensor
 
 class ImageNetProbabilitiesTo16ClassesMapping(ProbabilitiesToDecisionMapping):
     """Return the entry-level category decision for probabilities."""
 
-    def __init__(self, aggregation_function=np.mean):
+    def __init__(self, aggregation_function=torch.mean):
 
         self.aggregation_function = aggregation_function
 
 
     def __call__(self, probabilities):
-        """Return one of 16 categories for vector of probabilities.
+        """Return 16 category vector of probabilities.
 
         Keyword arguments:
-        probabilities -- a np.ndarray of length 1000
-                         (softmax output: all values should be
-                         within [0,1])
+        probabilities -- a torch tensor of length 1000, pre-softmax
         """
-
         self.check_input(probabilities)
-        assert len(probabilities) == 1000
+        assert probabilities.size(-1) == 1000
+        probabilities = torch.softmax(probabilities, -1)
 
-        max_value = -float("inf")
-        category_decision = None
+        agg_prob = torch.zeros((probabilities.size(0), 16))
         c = hc.HumanCategories()
-        for category in hc.get_human_object_recognition_categories():
+        for i, category in enumerate(hc.get_human_object_recognition_categories()):
             indices = c.get_imagenet_indices_for_category(category)
-            values = np.take(probabilities, indices)
-            aggregated_value = self.aggregation_function(values)
-            if aggregated_value > max_value:
-                max_value = aggregated_value
-                category_decision = category
+            values = probabilities[:,indices]
+            aggregated_value = self.aggregation_function(values, dim=-1)
+            agg_prob[:,i] = aggregated_value
    
-        return category_decision
+        return agg_prob.to(probabilities.device)
 
