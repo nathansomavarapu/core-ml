@@ -17,7 +17,7 @@ class CueConflictRunner(VisualClassificationRunner):
         self.module.testset.set_shape_or_texture('texture')
         texture_test_log = super().test()
 
-        return {'shape_bias': shape_test_log['correct'] / (shape_test_log['correct'] + texture_test_log['correct'])}
+        return {'shape_bias': 100.0 * shape_test_log['correct'] / (shape_test_log['correct'] + texture_test_log['correct'])}
     
     def extract_test_log(self, log: dict) -> dict:
 
