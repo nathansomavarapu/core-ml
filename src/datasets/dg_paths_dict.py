@@ -50,26 +50,49 @@ dg_path_dict = {
         }
     },
 
+    # 'oh': {
+    #     'art': {
+    #         'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/train',
+    #         'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/test',
+    #         'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/full'
+    #     },
+    #     'clipart': {
+    #         'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/train',
+    #         'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/test',
+    #         'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/full'
+    #     },
+    #     'product': {
+    #         'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/train',
+    #         'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/test',
+    #         'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/full'
+    #     },
+    #     'real': {
+    #         'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/train',
+    #         'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/test',
+    #         'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/full'
+    #     }
+    # },
+
     'oh': {
         'art': {
-            'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/train',
-            'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/test',
-            'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/art/full'
+            'train': '/srv/share/nsomavarapu3/tmp/art/train',
+            'val': '/srv/share/nsomavarapu3/tmp/art/test',
+            'test': '/srv/share/nsomavarapu3/tmp/art/full'
         },
         'clipart': {
-            'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/train',
-            'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/test',
-            'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/clipart/full'
+            'train': '/srv/share/nsomavarapu3/tmp/clipart/train',
+            'val': '/srv/share/nsomavarapu3/tmp/clipart/test',
+            'test': '/srv/share/nsomavarapu3/tmp/clipart/full'
         },
         'product': {
-            'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/train',
-            'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/test',
-            'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/product/full'
+            'train': '/srv/share/nsomavarapu3/tmp/product/train',
+            'val': '/srv/share/nsomavarapu3/tmp/product/test',
+            'test': '/srv/share/nsomavarapu3/tmp/product/full'
         },
         'real': {
-            'train': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/train',
-            'val': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/test',
-            'test': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split/real/full'
+            'train': '/srv/share/nsomavarapu3/tmp/real/train',
+            'val': '/srv/share/nsomavarapu3/tmp/real/test',
+            'test': '/srv/share/nsomavarapu3/tmp/real/full'
         }
     },
 

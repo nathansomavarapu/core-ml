@@ -1,0 +1,7 @@
+# @package _group_
+train: null
+val: null
+test:
+  batch_size: 256
+  shuffle: False
+  num_workers: 4

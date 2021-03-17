@@ -1,5 +1,20 @@
 import torch
 
+def get_class_prediction(preds: torch.Tensor, n: int = 1) -> torch.Tensor:
+    """Take a tensor of probabilistic predictions and return the predicted class
+    for each sample.
+
+    :param preds: Tensor of [Batch Size, C] with the predicted probability of each class
+    per sample 
+    :type preds: Torch.Tensor
+    :param n: [Top n to consider when getting predicted class, defaults to 1
+    :type n: int, optional
+    :return: Predicted class based on probabilities per class
+    :rtype: torch.Tensor
+    """
+    _, predicted = preds.detach().topk(n, 1)
+    return predicted
+
 def correct_indices(preds: torch.Tensor, labels: torch.Tensor, n: int = 1) -> torch.Tensor:
     """Compute the number of correctly predicted samples from the preds
     tensor using the correct labels.
@@ -15,7 +30,7 @@ def correct_indices(preds: torch.Tensor, labels: torch.Tensor, n: int = 1) -> to
     the tensor is of size [batch_size, 1]
     :rtype: torch.Tensor
     """
-    _, predicted = preds.detach().topk(n, 1)
+    predicted = get_class_prediction(preds, n=n)
     
     labels = labels.view(-1, 1).expand_as(predicted)
     correct = predicted[:,:n] == labels

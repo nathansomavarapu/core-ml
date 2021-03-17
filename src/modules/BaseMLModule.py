@@ -60,7 +60,7 @@ class BaseMLModule(ABC):
         self.trainset = self.valset = self.testset = None
         if self.datasets_dict:
             self.trainset, self.valset, self.testset = self.init_datasets(conf)
-                
+                        
         self.trainloader = self.valloader = self.testloader = None
         if self.datasets_dict:
             self.trainloader, self.valloader, self.testloader = self.init_dataloaders(conf) #type: ignore
@@ -419,37 +419,37 @@ class BaseMLModule(ABC):
         """
     
     @abstractmethod
-    def forward_train(self, data: Tuple) -> Any:
+    def forward_train(self, data: Tuple) -> Optional[Any]:
         """This method runs one iteration of training. Subclasses will need 
         to override functionality
 
         :param data: Data tuple of inputs to module
         :type data: Tuple
         :return: Tensor and logs used for optimization
-        :rtype: Any
+        :rtype: Optional[Any]
         """
         pass
 
     @abstractmethod
-    def forward_val(self, data: Tuple) -> Any:
+    def forward_val(self, data: Tuple) -> Optional[Any]:
         """This method runs one iteration of validation. Subclasses will need 
         to override functionality
 
         :param data: Data tuple of inputs to module
         :type data: Tuple
         :return: Tensor and logs used for optimization
-        :rtype: Any
+        :rtype: Optional[Any]
         """
         pass
 
     @abstractmethod
-    def forward_test(self, data: Tuple) -> Any:
+    def forward_test(self, data: Tuple) -> Optional[Any]:
         """This method runs one iteration of testing. Subclasses will need 
         to override functionality
 
         :param data: Data tuple of inputs to module
         :type data: Tuple
         :return: Tensor and logs used for optimization
-        :rtype: Any
+        :rtype: Optional[Any]
         """
         pass

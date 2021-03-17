@@ -81,6 +81,7 @@ class DGDataset(ABC):
         a path to the data itself arranged in the structure assumed by the PyTorch
         ImageFolder Dataset
         :type data_fp: str
+        :raises NotImplementedError: Raised if subclass does not implement abstract method
         :return: Torch Dataset of the appropriate type
         :rtype: Dataset
         """

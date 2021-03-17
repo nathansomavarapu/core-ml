@@ -3,13 +3,15 @@ stylized_dataset_fp_dict = {
     'painting': {
         'pacs': '/srv/share3/nsomavarapu3/datasets/DG/kfold_stylized',
         'vlcs': '/srv/share3/nsomavarapu3/datasets/DG/VLCS_stylized',
-        'oh': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split_stylized/',
+        # 'oh': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split_stylized/',
+        'oh': '/srv/share/nsomavarapu3/tmp_style',
         'domainnet': '/srv/share3/nsomavarapu3/datasets/DG/domainnet_stylized/'
     },
     'inter_source': {
         'pacs': '/srv/share3/nsomavarapu3/datasets/DG/kfold_stylized_pair',
         'vlcs': '/srv/share3/nsomavarapu3/datasets/DG/VLCS_stylized_pair',
-        'oh': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split_stylize_pair/'
+        # 'oh': '/srv/share3/nsomavarapu3/datasets/DG/OfficeHomeDataset_split_stylize_pair/'
+        'oh': '/srv/share/nsomavarapu3/tmp_pair_OH'
         # 'domainnet': ''
     },
     'intra_source': {

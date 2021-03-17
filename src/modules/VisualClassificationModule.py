@@ -17,7 +17,6 @@ from class_mapper.class_mapper_dict import class_mapper_dict
 from utils.conf_utils import remove_internal_conf_params
 from torchvision.utils import save_image
 
-
 class VisualClassificationModule(BaseMLModule):
 
     def __init__(self, conf: DictConfig, device: torch.device) -> None:
@@ -45,13 +44,13 @@ class VisualClassificationModule(BaseMLModule):
         }
         return attrs
     
-    def forward_train(self, data: Tuple) -> dict:
+    def forward_train(self, data: Tuple) -> Optional[dict]:
         """Runs one iteration of classification training.
 
         :param data: Tuple of data to be used for training
         :type data: Tuple
         :return: Dict to be used for logging
-        :rtype: dict
+        :rtype: Optional[dict]
         """
         images, labels = data
         pred = self.model(images)
@@ -68,13 +67,13 @@ class VisualClassificationModule(BaseMLModule):
 
         return logging_dict
 
-    def forward_val(self, data: Tuple) -> dict:
+    def forward_val(self, data: Tuple) -> Optional[dict]:
         """Runs one iteration of classification validation.
 
         :param data: Tuple of data to be used for validation
         :type data: Tuple
         :return: Dict to be used for logging
-        :rtype: dict
+        :rtype: Optional[dict]
         """
         images, labels = data
         pred = self.model(images)
@@ -89,7 +88,7 @@ class VisualClassificationModule(BaseMLModule):
 
         return logging_dict
     
-    def forward_test(self, data: Tuple) -> dict:
+    def forward_test(self, data: Tuple) -> Optional[dict]:
         """Runs one iteration of classification testing.
         This function requires that the test model of the
         module be defined.
@@ -97,7 +96,7 @@ class VisualClassificationModule(BaseMLModule):
         :param data: Tuple of data to be used for testing
         :type data: Tuple
         :return: Dict to be used for logging
-        :rtype: dict
+        :rtype: Optional[dict]
         """
         assert self.test_model is not None, "No test model avaliable, set self.test_model before testing."
         
